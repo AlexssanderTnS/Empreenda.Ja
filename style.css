@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
+
+  
+
 *{
     padding: 0;
     margin: 0;
@@ -9,9 +12,6 @@
     
 }
 
-header, section.franqueados{
-    position: absolute;
-}
 
 h2{
     font-size: 2.5rem;
@@ -23,8 +23,13 @@ p{
 
 /* ------------------------------------------------------------------------- */
 
+
+
 body{
     background-color: #ffffff;
+    min-height: 160vh;
+    height: auto;
+
 }
 
 header{
@@ -33,11 +38,12 @@ header{
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    position: sticky;
+    top: -1px;
     padding: 10px;
     background-color: #F8F9FA;
-    position: fixed;
     border-bottom: 1px solid #182940;
-  z-index: 100;  
+    z-index: 100;   
 }
 
 .container-fluid{
@@ -201,8 +207,6 @@ section.franqueado div.franqueado-info{
     justify-content: space-evenly;
     margin-top: 10%;
 }
-
-
 
 section.franqueado div.franqueado-info a{
     text-decoration: none;
@@ -513,3 +517,33 @@ section.Aulas h2{
     font-weight: 800;
     color: #225473c7;
 }
+
+@media screen and (max-width: 768px) {
+
+    section img{
+        display: none;
+    }
+
+    h1, h2, h3{
+        font-size: 21px;
+    }
+
+    p{
+        text-align: justify;
+        font-size: 15px;
+    }
+/* 
+    section.franqueado{
+       
+    }
+
+    section{
+      
+    } */
+
+    header{
+        position: sticky;
+    }
+
+}
+  
