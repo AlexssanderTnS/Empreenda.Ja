@@ -520,6 +520,28 @@ section.Aulas h2{
     color: #225473c7;
 }
 
+section.Tvideo h2{
+    font-weight: 800;
+    color: #225473;
+    display: flex;
+    align-items: center;
+    padding: 5%;
+
+}
+
+
+
+section.Tvideo iframe{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+
+}
+
+
+
+
 @media screen and (max-width: 768px) {
 
     section img{
