@@ -382,7 +382,10 @@ section div.mei-info{
 /*-------------------------------------------------------------------------*/
 
 
-
+div.TextoApoio{
+    display: flex;
+    flex-direction: column;
+}
 
 
 
