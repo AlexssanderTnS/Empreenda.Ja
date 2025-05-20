@@ -109,7 +109,7 @@ section.empreender h2 {
     align-items: center;
     justify-content: center;
     padding-bottom: 0.5em;
-    color: #182940;
+    color: #3d93c8;
     font-size: 30px;
     font-weight: bold;
     text-decoration: underline;
@@ -181,9 +181,9 @@ section.empreendimentos{
 }
 
 section.empreendimentos > h2{
-    border-bottom: 2px solid #182940;
+    border-bottom: 2px solid #3d93c8;
     padding-bottom: 0.5em;
-    color: #182940;
+    color:#3d93c8;
     text-align: center;
     font-size: 50px;
     font-weight: 1000;
@@ -225,7 +225,7 @@ section.franqueado img{
 
 section.franqueado h2{
     font-weight: 800;
-    color: #225473c7;
+    color: #3d93c8;
 }
 /* ------------------------------------------------------------------------- */
 
@@ -269,7 +269,7 @@ button.venha-conhecer{
 }
 
 button.venha-conhecer:hover{
-    background-color: #225473;
+    background-color:#3d93c8;
 }
 
 div.call-to-action{
@@ -282,7 +282,7 @@ div.call-to-action{
 
 section.ltda h2{
     font-weight: 800;
-    color: #225473c7;
+    color: #3d93c8;
 }
 
 section.ltda img{
@@ -350,7 +350,7 @@ section.mei{
 
 section.mei h2{
     font-weight: 800;
-    color: #225473c7;
+    color:#3d93c8;
 }
 .mei img{
     width: 40%;
@@ -519,27 +519,29 @@ section.Aulas img{
 
 section.Aulas h2{
     font-weight: 800;
-    color: #225473c7;
+    color: #3d93c8;
 }
 
 section.Tvideo h2{
     font-weight: 800;
-    color: #225473;
+    color: #3d93c8;
     padding: 2%;
 
 }
 
 section.videos{
     display: flex;
-    justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
+    flex-direction: column;
+    align-content: space-around;
 }
 
 section.videos h2{
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #182940;
+    color: #3d93c8;
     font-size: 30px;
     font-weight: bold;
     text-decoration: underline;
@@ -553,8 +555,23 @@ section.videos p{
     justify-content: center;
 }
 
-#video{
-    gap: 2px;
+#Ivideo{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: nowrap;
+    
+
+}
+
+#Ivideo p{
+    color: #ffffff;
+    background-color: #3d93c8;
+    box-sizing: border-box;
+    border-radius: 10px;
+    box-shadow: 5px 5px 15px ;
+    padding: 20px;
 }
 
 
@@ -617,12 +634,7 @@ section.appinfo{
     margin-left: 15%;
 }
 
-/* section.appinfo img{
-    width: 50%;
-    height: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center; */
+
 
 
 section.appinfo div{
