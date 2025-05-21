@@ -483,7 +483,7 @@ iframe{
     width: 60;
 }
 
-section.Aulas{
+/* section.Aulas{
     width: 100%;
     display: flex;
     align-items: center;
@@ -527,13 +527,31 @@ section.Tvideo h2{
     color: #3d93c8;
     padding: 2%;
 
+} */
+
+
+#tittle{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#tittle p{
+    font-weight: bold;
+}
+
+#tittle h2{
+    font-weight: 800;
+    color: #3d93c8;
+    text-decoration: underline;
 }
 
 section.videos{
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    flex-direction: column;
+    flex-direction: row;
     align-content: space-around;
 }
 
@@ -548,39 +566,48 @@ section.videos h2{
 }
 
 section.videos p{
-    text-align: justify;
+    text-align: center;
+    font-size: 15px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-#Ivideo{
+section.Ivideo{
     display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    align-items: center;
-    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: baseline;
+    margin-left: 3%;
     
 
 }
 
-#Ivideo p{
+section.Ivideo p{
     color: #ffffff;
     background-color: #3d93c8;
     box-sizing: border-box;
     border-radius: 10px;
-    box-shadow: 5px 5px 15px ;
-    padding: 20px;
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
 }
 
 
-section.Tvideo iframe{
+section.Ivideo iframe{
     display: flex;
     justify-content: center;
     align-items: center;
+}
 
-
+section.Ivideo div{
+    width: 100%;
+    padding: 1%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 
@@ -631,13 +658,90 @@ section.appinfo{
     gap: 50px;
     width: 70%;
     margin-bottom: 2%;
-    margin-left: 15%;
+    margin-left: 15%; 
 }
 
 
+section.PrimeiraInfo{
+    
+    background-color: #e9eef1;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 5%;
+}
 
 
-section.appinfo div{
+section.PrimeiraInfo img{
+    height: 46%;
+    padding: 2%;
+}
+
+section.DoisInfo{
+    background-color: #e9eef1;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 6px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 5%;
+}
+
+section.DoisInfo div{
+    display: flex;
+    flex-direction: column;
+}
+
+section.DoisInfo img{
+
+    height: 46%;
+    padding: 2%;
+}
+
+section.TresInfo{
+    background-color: #e9eef1;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 15px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+
+section.TresInfo div{
+    padding: 21px;
+    width: 100%;
+}
+
+section.TresInfo img{
+    height: 37%;
+    
+}
+
+
+section.QuatroInfo{
+    background-color: #e9eef1;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5%;
+    align-items: center;
+}
+
+section.QuatroInfo img{
+    height: 300px;
+    padding: 6%;
+}
+
+/* section.appinfo div{
 
     background-color: #e9eef1;
     box-sizing: border-box;
@@ -646,12 +750,11 @@ section.appinfo div{
     padding: 10px;
     width: 100%;
 
-}
+} */
 
 section.appinfo h1{
     color: #3d93c8;
     font-weight: bolder;
-    
     padding: 4%;
 }
 
@@ -659,12 +762,12 @@ img.pinterest{
     width: 30%;
     height: 20%;
 }
-
+/* 
 section.appinfo div img{
-   display: flex;
-   justify-content: center;
-   align-items: center;
-}
+    display: flex;
+    justify-content: center;
+    align-items: center;
+} */
 
 @media screen and (max-width: 768px) {
 
