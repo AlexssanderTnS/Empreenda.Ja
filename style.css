@@ -574,9 +574,10 @@ section.videos p{
     justify-content: center;
 }
 
-section.Ivideo{
+section.videos{
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: space-evenly;
     align-items: baseline;
     margin-left: 3%;
@@ -584,7 +585,7 @@ section.Ivideo{
 
 }
 
-section.Ivideo p{
+section.videos p{
     color: #ffffff;
     background-color: #3d93c8;
     box-sizing: border-box;
@@ -595,13 +596,13 @@ section.Ivideo p{
 }
 
 
-section.Ivideo iframe{
+section.videos iframe{
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-section.Ivideo div{
+section.videos div{
     width: 100%;
     padding: 1%;
     display: flex;
@@ -771,30 +772,39 @@ section.appinfo div img{
 
 @media screen and (max-width: 768px) {
 
-    section img{
+   
+
+    section img {
         display: none;
     }
 
-    h1, h2, h3{
+    h1, h2, h3 {
         font-size: 21px;
     }
 
-    p{
-        text-align: justify;
+    p {
+        text-align: left;
         font-size: 15px;
     }
-/* 
-    section.franqueado{
-       
+
+    section.videos {
+        display: flex;
+        flex-direction: column; /* agora vai! */
     }
 
-    section{
-      
-    } */
-
-    header{
+    header {
         position: sticky;
     }
 
+    section.appinfo img{
+        display: block;  
+        height: 70px;
+    }
+
+    section.TresInfo div{
+        width: 50%;
+
+
 }
-  
+    
+}
