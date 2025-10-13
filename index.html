@@ -65,6 +65,41 @@
     </nav>
   </header>
 
+  <!-- Modal de aviso -->
+  <div id="avisoLogin" class="modal">
+    <div class="modal-content">
+      <img
+        src="https://images.pexels.com/photos/7948086/pexels-photo-7948086.jpeg?_gl=1*vjclyn*_ga*ODQxNDI3OTcuMTc1ODU0NTkyNw..*_ga_8JE65Q40S6*czE3NjAzNzgwMTUkbzIkZzEkdDE3NjAzNzgxNTIkajU5JGwwJGgw"
+        alt="IBAP RJ" style="width:120px; margin-bottom:10px;">
+      <span class="fechar-modal" id="fecharAviso">&times;</span> <!-- botão X -->
+      <h2>Você é professor?</h2>
+      <p>Para registrar presença, acesse sua conta.</p>
+      <div class="botoes">
+        <button id="btnSim" class="btn-primario">Sim, sou professor</button>
+        <button id="btnNao" class="btn-secundario">Não, continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de login -->
+  <div id="modalLogin" class="modal">
+    <div class="modal-content login">
+      <img
+        src="https://media.istockphoto.com/id/2216633996/pt/foto/vertical-photo-collage-of-hands-palm-hold-chart-career-development-coin-income-earnings-dollar.jpg?s=612x612&w=0&k=20&c=xtyPKQCR1sTmOdhmLqnamnV6BUsxkFYTXMpSIRxxED8="
+        alt="IBAP RJ" style="width:120px; margin-bottom:10px;">
+      <span class="fechar-modal" id="fecharLogin">&times;</span> <!-- botão X -->
+      <h2>Login do Professor</h2>
+      <form id="formLogin">
+        <input type="text" id="usuario" placeholder="Usuário" required />
+        <input type="password" id="senha" placeholder="Senha" required />
+        <button type="submit" class="btn-primario">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+
+
+
   <div vw class="enabled">
     <div vw-access-button class="active"></div>
     <div vw-plugin-wrapper>
@@ -91,42 +126,47 @@
 
   <div id="tittle">
     <h2>Fique por dentro:</h2>
-    <p>Conheça nosso canal do Youtube e fique por dentro de tudo: <a href="https://www.youtube.com/@IBAP-RJ" target="_blank">Acessar
-      o canal</a></p>
-    
+    <p>Conheça nosso canal do Youtube e fique por dentro de tudo: <a href="https://www.youtube.com/@IBAP-RJ"
+        target="_blank">Acessar
+        o canal</a></p>
+
   </div>
   <section class="videos">
-    
 
-      <div>
-        <iframe width="380" height="250" margin-top="1%"
-          src="https://www.youtube.com/embed/9Ez-XKkNmco?si=DyO1bhjZfDyJT4sp" title="Vídeo do YouTube"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen></iframe>
-        <p>Evento de abertura do Projeto.</p>
-      </div>
 
-      <div>
-        <iframe width="380" height="250" margin-top="1%"
-          src="https://www.youtube.com/embed/UC8jfOVfdlQ?si=6hjyw4Uv06MwR64f" title="Vídeo do YouTube"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen></iframe>
-        <p>Secretario Filipinho apresenta o Empreenda.JA</p>
-      </div>
+    <div>
+      <iframe width="380" height="250" margin-top="1%"
+        src="https://www.youtube.com/embed/9Ez-XKkNmco?si=DyO1bhjZfDyJT4sp" title="Vídeo do YouTube"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+      <p>Evento de abertura do Projeto.</p>
+    </div>
 
-      <div>
-        <iframe width="380" height="250" margin-top="1%"
-          src="https://www.youtube.com/embed/2vElKOgRen0?si=vy6PIV_lhG1UdtIv" title="Vídeo do YouTube"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen></iframe>
-        <p>Alinhamento com os Professores.</p>
-      </div>
-    </section>
+    <div>
+      <iframe width="380" height="250" margin-top="1%"
+        src="https://www.youtube.com/embed/UC8jfOVfdlQ?si=6hjyw4Uv06MwR64f" title="Vídeo do YouTube"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+      <p>Secretario Filipinho apresenta o Empreenda.JA</p>
+    </div>
 
-    
+    <div>
+      <iframe width="380" height="250" margin-top="1%"
+        src="https://www.youtube.com/embed/2vElKOgRen0?si=vy6PIV_lhG1UdtIv" title="Vídeo do YouTube"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+      <p>Alinhamento com os Professores.</p>
+    </div>
+  </section>
+
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"></script>
+
+  <script src="/backend/script.js"></script>
+  <script src="/script/script.js"></script>
+
 
 
 
