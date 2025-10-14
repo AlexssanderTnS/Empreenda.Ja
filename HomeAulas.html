@@ -10,15 +10,17 @@
 
     <title>Portal-Aulas</title>
 </head>
+
+
+<body>
+
  <header>
 
     <div>
-      <img class="logosetrab" src="SecretariaLogo.png" alt="logoo">
-    </div>
-
-    <div class="logoibap">
+      <img class="logos" src="SecretariaLogo.png" alt="logoo">
       <img class="logoibap" src="IBAPLogo.png" alt="LOGO" class="logo">
     </div>
+
 
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
@@ -29,8 +31,9 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
           <ul class="navbar-nav">
+            
             <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="index.html">Inicio</a>
+              <a class="nav-link active" aria-current="page" href="index.html">Início</a>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
@@ -41,12 +44,12 @@
                 <li><a class="dropdown-item" href="/HomeAulas.html">Pagina Inicial</a></li>
                 <li><a class="dropdown-item" href="/marketing.html">Marketing</a></li>
                 <li><a class="dropdown-item" href="/Papoio.html">Conteúdo de apoio</a></li>
-
+                
               </ul>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
+              aria-expanded="false">
                 Empreendedorismo
               </a>
               <ul class="dropdown-menu">
@@ -56,6 +59,7 @@
                 <li><a class="dropdown-item" href="/pj.html">Pessoa Juridica - PJ</a></li>
                 <li><a class="dropdown-item" href="/memp.html">Ministério do Empreendedor</a></li>
               </ul>
+              <li class="nav-item"><a class="nav-link" href="#" id="abrirLogin">Área do Professor</a></li>
             </li>
           </ul>
         </div>
@@ -63,18 +67,20 @@
     </nav>
   </header>
 
-<div vw class="enabled">
-    <div vw-access-button class="active"></div>
-    <div vw-plugin-wrapper>
-        <div class="vw-plugin-top-wrapper"></div>
-    </div>
-</div>
-<script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-<script>
-    new window.VLibras.Widget('https://vlibras.gov.br/app');
-</script>
 
-<body>
+
+
+
+  <div vw class="enabled">
+      <div vw-access-button class="active"></div>
+      <div vw-plugin-wrapper>
+          <div class="vw-plugin-top-wrapper"></div>
+      </div>
+  </div>
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>
+      new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
     <section class="Aulas">
         <div class="Aulas-info">
             <h2>Momento de estudos</h2>
@@ -97,6 +103,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+
+
+
+            <script src="/backend/script.js"></script>
+  <script src="/script/script.js"></script>
 
 </body>
 
