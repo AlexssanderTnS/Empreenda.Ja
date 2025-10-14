@@ -193,11 +193,11 @@ app.get('/api/relatorios', autenticar, async (req, res) => {
 
     try {
         const linhas = await dbAll(
-            `SELECT f.*, p.nome AS professor_nome
-       FROM frequencias f
-       JOIN professores p ON p.id = f.professor_id
-       ${where}
-       ORDER BY data DESC, f.id DESC`,
+        `SELECT f.*, p.nome AS professor_nome
+        FROM frequencias f
+        JOIN professores p ON p.id = f.professor_id
+        ${where}
+        ORDER BY data DESC, f.id DESC`,
             params
         );
         res.json(linhas);

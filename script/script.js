@@ -5,6 +5,23 @@ const modalLogin = document.getElementById("modalLogin");
 const btnSim = document.getElementById("btnSim");
 const btnNao = document.getElementById("btnNao");
 
+
+// Abre a modal quando clicar no link da navbar
+if (abrirLogin) {
+    abrirLogin.addEventListener("click", (e) => {
+        e.preventDefault(); // impede redirecionamento
+        modalLogin.style.display = "flex"; // mostra a modal
+    });
+}
+
+// Fechar modal (se você tiver o botão de fechar)
+const fecharLogin = document.getElementById("fecharLogin");
+if (fecharLogin) {
+    fecharLogin.addEventListener("click", () => {
+        modalLogin.style.display = "none";
+    });
+}
+
 // Mostrar o aviso assim que o site carregar
 window.addEventListener("load", () => {
     avisoLogin.style.display = "flex";
@@ -56,3 +73,5 @@ document.getElementById("fecharAviso").addEventListener("click", () => {
 document.getElementById("fecharLogin").addEventListener("click", () => {
     document.getElementById("modalLogin").style.display = "none";
 });
+
+
