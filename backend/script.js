@@ -1,4 +1,3 @@
-// ===== IMPORTAÇÕES =====
 import express from 'express';     // framework para rotas HTTP
 import cors from 'cors';           // permite requisições de outros domínios (frontend separado)
 import sqlite3 from 'sqlite3';     // banco de dados leve (em arquivo)
@@ -260,7 +259,29 @@ cron.schedule('0 2 * * *', () => {
 
 // ===== INICIALIZA O SERVIDOR =====
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    await seed(); // cria usuários iniciais se não existirem
-    console.log(`Servidor rodando na porta ${PORT}`);
+db.serialize(async () => {
+    // Garante que as tabelas sejam criadas antes do seed
+    db.run(`CREATE TABLE IF NOT EXISTS professores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        usuario TEXT UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        tipo TEXT CHECK(tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS frequencias (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        professor_id INTEGER NOT NULL,
+        curso TEXT NOT NULL,
+        local TEXT NOT NULL,
+        turma TEXT NOT NULL,
+        data TEXT NOT NULL,
+        alunos TEXT NOT NULL,
+        criado_em TEXT DEFAULT (datetime('now'))
+    )`);
+
+    await seed(); // popula o banco com usuários iniciais
+    app.listen(PORT, () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+    });
 });

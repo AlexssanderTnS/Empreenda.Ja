@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000"; // Troque pelo endereço do backend quando subir
+const API_URL = "https://empreenda-ja.onrender.com"; // Troque pelo endereço do backend quando subir
 
 const avisoLogin = document.getElementById("avisoLogin");
 const modalLogin = document.getElementById("modalLogin");
