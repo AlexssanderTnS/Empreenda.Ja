@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background-color: #f4f6f9;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+}
+
+/* sidebar */
+
+.sidebar {
+    width: 240px;
+    background-color: #01529f;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: width 0.3s;
+}
+
+.sidebar-header {
+    text-align: center;
+    padding: 1.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background-image: url(https://media.istockphoto.com/id/1402430797/pt/foto/business-3d-tablet-virtual-growth-arrow-financial-graph-on-digital-technology-strategy.jpg?s=612x612&w=0&k=20&c=65x1nbe9UvovgfGHUW18q2YkQhDKfFlfNeuhYPgdzxQ=);
+    background-size: cover;
+}
+
+.sidebar-header h4 {
+    color: #f4f6f9;
+    font-size: 20px;
+    font-weight: 900;
+    margin-top: 0.5rem;
+}
+
+.nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-links li {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.nav-links li:hover,
+.nav-links li.active {
+    background-color: #002244;
+}
+
+.logout {
+    padding: 15px;
+    background: #001b3a;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.logout:hover {
+    background: #000f2a;
+}
+
+.content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    transition: opacity 0.3s;
+}
+
+.card {
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 1px 3px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+.card h4 {
+    color: #003366;
+    margin-bottom: 0.5rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+thead {
+    background-color: #003366;
+    color: white;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade {
+    animation: fadeIn 0.4s ease;
+}

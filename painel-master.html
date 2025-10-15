@@ -13,16 +13,44 @@
 <body>
     <header>
         <div>
-            <img class="logos" src="SecretariaLogo.png" alt="Secretaria">
-            <img class="logoibap" src="IBAPLogo.png" alt="IBAP">
+            <div class="sidebar-header">
+                <h4>Painel do Administrador</h4>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-section="dashboard">Dashboard</li>
+                <li data-section="frequencias">Frequências</li>
+                <li data-section="relatorios">Relatórios</li>
+                <li data-section="professores">Professores Ativos</li>
+                <li data-section="cadastro">Cadastrar novos Professores</li>
+                <li data-section="backups">Backups</li>
+                <li data-section="config">Configurações</li>
+            </ul>
+
         </div>
 
-        <nav class="navbar navbar-expand-lg bg-body-tertiary">
-            <div class="container-fluid">
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarNavDropdown">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+    <main class="content" id="conteudo">
+        <div id="dashboard" class="fade">
+            <h2>Bem vindo, Administrador</h2>
+            <p>Gerencie professores, frequências e relatórios do Empreenda.Já.</p>
+
+            <div class="cards-container">
+                <div class="card">
+                    <h4>Professores</h4>
+                    <h2>12</h2>
+                </div>
+                <div class="card">
+                    <h4>Frequência</h4>
+                    <h2>22</h2>
+                </div>
+                <div class="card">
+                    <h4>Último Backup</h4>
+                    <h2>14/10/2025</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
 
                 <div class="collapse navbar-collapse" id="navbarNavDropdown">
                     <ul class="navbar-nav">
