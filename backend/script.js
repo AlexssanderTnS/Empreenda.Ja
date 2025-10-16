@@ -9,7 +9,15 @@ import fs from 'fs';               // manipulação de arquivos (para backups)
 
 // ===== CONFIGURAÇÃO DO SERVIDOR =====
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: [
+        "https://empreenda-ja.vercel.app",
+        "http://localhost:5500"
+    ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+
+}));
 app.use(express.json()); // interpreta JSON no corpo das requisições
 
 const SECRET = process.env.JWT_SECRET || '0000'; // chave secreta (mude em produção)
