@@ -1,21 +1,18 @@
-// ==================== PAINEL MASTER ROBUSTO ====================
-// Essa versão evita erros de "null" e garante funcionamento das abas e dados dinâmicos.
+// ==================== PAINEL MASTER COMPLETO ====================
 
 (function iniciarPainel() {
-  // Espera o DOM existir antes de executar o script
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", iniciarPainel);
     return;
   }
 
-  console.log("✅ Painel Master carregado com segurança");
+  console.log("✅ Painel Master inicializado");
 
   // ==================== CONFIGURAÇÕES ====================
   const API_URL = "https://empreenda-ja.onrender.com";
   const token = localStorage.getItem("token");
 
   if (!token) {
-    alert("Acesso negado! Faça login como master primeiro.");
     window.location.href = "index.html";
     return;
   }
@@ -23,10 +20,7 @@
   const conteudo = document.getElementById("conteudo");
   const navItems = document.querySelectorAll(".nav-links li");
 
-  if (!conteudo) {
-    console.error("❌ ERRO: elemento #conteudo não encontrado no DOM!");
-    return;
-  }
+  if (!conteudo) return;
 
   // ==================== VALIDAÇÃO DO TOKEN ====================
   async function validarToken() {
@@ -35,23 +29,18 @@
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (resp.status === 401) {
-        alert("Sua sessão expirou. Faça login novamente.");
         localStorage.removeItem("token");
         window.location.href = "index.html";
         return false;
       }
-
       return resp.ok;
-    } catch (e) {
-      console.error("Erro ao validar token:", e);
-      alert("Erro de comunicação com o servidor. Tente novamente.");
+    } catch {
       return false;
     }
   }
 
-  // ==================== CARREGAR RELATÓRIOS ====================
+  // ==================== RELATÓRIOS ====================
   async function carregarRelatorios() {
     const tokenValido = await validarToken();
     if (!tokenValido) return;
@@ -60,58 +49,114 @@
       const resposta = await fetch(`${API_URL}/api/relatorios`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!resposta.ok) throw new Error("Erro ao buscar relatórios");
       const dados = await resposta.json();
 
-      let linhas = "";
-      if (dados.length === 0) {
-        linhas = `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`;
-      } else {
-        linhas = dados
-          .map(
-            (l) => `
-          <tr>
-            <td>${l.id}</td>
-            <td>${l.professor_nome}</td>
-            <td>${l.curso}</td>
-            <td>${l.local}</td>
-            <td>${l.turma}</td>
-            <td>${l.data}</td>
-            <td>${l.alunos}</td>
-          </tr>`
-          )
-          .join("");
-      }
+      let linhas =
+        dados.length === 0
+          ? `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`
+          : dados
+              .map(
+                (l) => `
+            <tr>
+              <td>${l.id}</td>
+              <td>${l.professor_nome}</td>
+              <td>${l.curso}</td>
+              <td>${l.local}</td>
+              <td>${l.turma}</td>
+              <td>${l.data}</td>
+              <td>${l.alunos}</td>
+            </tr>`
+              )
+              .join("");
 
       conteudo.innerHTML = `
-        <header class="topbar">
-          <h2>📄 Relatórios</h2>
-        </header>
+        <header class="topbar"><h2>📄 Relatórios</h2></header>
         <div class="fade">
           <table class="table table-striped table-bordered">
             <thead class="table-dark">
               <tr>
-                <th>ID</th>
-                <th>Professor</th>
-                <th>Curso</th>
-                <th>Local</th>
-                <th>Turma</th>
-                <th>Data</th>
-                <th>Alunos</th>
+                <th>ID</th><th>Professor</th><th>Curso</th><th>Local</th><th>Turma</th><th>Data</th><th>Alunos</th>
               </tr>
             </thead>
             <tbody>${linhas}</tbody>
           </table>
-        </div>
-      `;
+        </div>`;
     } catch (erro) {
-      console.error("Erro ao carregar relatórios:", erro);
       conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
     }
   }
 
-  // ==================== CONTEÚDOS ESTÁTICOS ====================
+  // ==================== LISTAR PROFESSORES ====================
+  async function carregarProfessores() {
+    try {
+      const resp = await fetch(`${API_URL}/api/professores/listar`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dados = await resp.json();
+
+      const tbody = document.querySelector("#tabelaProfessores tbody");
+      if (!tbody) return;
+
+      tbody.innerHTML =
+        dados.length === 0
+          ? "<tr><td colspan='4'>Nenhum professor encontrado.</td></tr>"
+          : dados
+              .map(
+                (p) =>
+                  `<tr><td>${p.id}</td><td>${p.nome}</td><td>${p.usuario}</td><td>${p.tipo}</td></tr>`
+              )
+              .join("");
+    } catch (erro) {
+      console.error("Erro ao carregar professores:", erro);
+      const tbody = document.querySelector("#tabelaProfessores tbody");
+      if (tbody)
+        tbody.innerHTML = "<tr><td colspan='4'>Erro ao carregar lista.</td></tr>";
+    }
+  }
+
+  // ==================== CADASTRAR PROFESSOR ====================
+  function configurarFormularioCadastro() {
+    const form = document.querySelector("form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const nome = form.querySelectorAll("input")[0]?.value.trim();
+      const usuario = form.querySelectorAll("input")[1]?.value.trim();
+      const senha = form.querySelector("input[type='password']")?.value.trim();
+
+      if (!nome || !usuario || !senha) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_URL}/api/professores`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ nome, usuario, senha }),
+        });
+
+        const dados = await resp.json();
+
+        if (resp.ok) {
+          alert("✅ Professor cadastrado com sucesso!");
+          form.reset();
+          await carregarProfessores();
+        } else {
+          alert("⚠️ " + (dados.erro || "Erro ao cadastrar."));
+        }
+      } catch (erro) {
+        alert("Erro de comunicação com o servidor.");
+      }
+    });
+  }
+
+  // ==================== SEÇÕES ====================
   const secoes = {
     dashboard: `
       <header class="topbar"><h2>📊 Painel de Controle</h2></header>
@@ -130,17 +175,23 @@
     `,
     professores: `
       <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
-      <div class="fade"><p>Lista de professores cadastrados no sistema.</p></div>
+      <div class="fade">
+        <p>Lista de professores cadastrados no sistema.</p>
+        <table class="table table-striped" id="tabelaProfessores">
+          <thead><tr><th>ID</th><th>Nome</th><th>Usuário</th><th>Tipo</th></tr></thead>
+          <tbody><tr><td colspan="4">Carregando...</td></tr></tbody>
+        </table>
+      </div>
     `,
     cadastro: `
       <header class="topbar"><h2>🧾 Cadastrar Novo Professor</h2></header>
       <div class="fade">
         <div class="card">
           <form>
-            <label>Nome:</label><br><input type="text" style="width:100%;margin-bottom:10px;">
-            <label>Usuário:</label><br><input type="text" style="width:100%;margin-bottom:10px;">
-            <label>Senha:</label><br><input type="password" style="width:100%;margin-bottom:10px;">
-            <button style="background:#003366;color:white;border:none;padding:8px 16px;border-radius:6px;">Cadastrar</button>
+            <label>Nome:</label><input type="text" class="form-control mb-2">
+            <label>Usuário:</label><input type="text" class="form-control mb-2">
+            <label>Senha:</label><input type="password" class="form-control mb-3">
+            <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
           </form>
         </div>
       </div>
@@ -154,16 +205,15 @@
           <li>backup_2025-10-13.db</li>
           <li>backup_2025-10-12.db</li>
         </ul>
-        <button style="background:#ffcc29;border:none;padding:8px 12px;border-radius:6px;">Gerar Backup Agora</button>
       </div>
     `,
     config: `
       <header class="topbar"><h2>⚙️ Configurações</h2></header>
       <div class="fade"><p>Preferências e ajustes da conta do administrador.</p></div>
-    `
+    `,
   };
 
-  // ==================== FUNÇÃO DE TROCA DE ABAS ====================
+  // ==================== TROCA DE ABAS ====================
   function ativarTrocaAbas() {
     navItems.forEach((item) => {
       item.addEventListener("click", async () => {
@@ -172,18 +222,19 @@
 
         const secao = item.dataset.section;
 
-        // Seção dinâmica
         if (secao === "relatorios") {
           await carregarRelatorios();
+        } else if (secao === "professores") {
+          conteudo.innerHTML = secoes[secao];
+          await carregarProfessores();
         } else {
           conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
+          if (secao === "cadastro") configurarFormularioCadastro();
         }
       });
     });
   }
 
   ativarTrocaAbas();
-
-  // ==================== INÍCIO SEGURO ====================
   conteudo.innerHTML = secoes.dashboard;
 })();

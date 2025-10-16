@@ -241,6 +241,78 @@ app.get('/api/relatorios/export', autenticar, async (req, res) => {
     }
 });
 
+// ===== CADASTRAR NOVO PROFESSOR (somente master) =====
+app.post('/api/professores', autenticar, async (req, res) => {
+    if (req.user.tipo !== 'master') {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+
+    const { nome, usuario, senha } = req.body;
+    if (!nome || !usuario || !senha) {
+        return res.status(400).json({ erro: 'Campos obrigatórios: nome, usuário, senha' });
+    }
+
+    try {
+        const hash = bcrypt.hashSync(senha, 10);
+        await dbRun(
+            'INSERT INTO professores (nome, usuario, senha, tipo) VALUES (?, ?, ?, ?)',
+            [nome, usuario, hash, 'professor']
+        );
+        res.json({ sucesso: true, mensagem: 'Professor cadastrado com sucesso.' });
+    } catch (e) {
+        if (e.message.includes('UNIQUE')) {
+            return res.status(400).json({ erro: 'Usuário já existe' });
+        }
+        console.error(e);
+        res.status(500).json({ erro: 'Erro ao cadastrar professor' });
+    }
+});
+
+// ===== LISTAR PROFESSORES (somente master) =====
+app.get('/api/professores/listar', autenticar, async (req, res) => {
+    if (req.user.tipo !== 'master') {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
+
+    try {
+        const professores = await dbAll(
+            'SELECT id, nome, usuario, tipo FROM professores ORDER BY id DESC'
+        );
+        res.json(professores);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ erro: 'Erro ao buscar professores' });
+    }
+});
+
+
+
+// ===== CADASTRAR NOVO PROFESSOR (rota master) =====
+app.post('/api/professores', autenticar, async (req, res) => {
+    if (req.user.tipo !== 'master') return res.status(403).json({ erro: 'Acesso negado' });
+    const { nome, usuario, senha } = req.body;
+    if (!nome || !usuario || !senha) return res.status(400).json({ erro: 'Campos obrigatórios faltando' });
+
+    try {
+        const hash = bcrypt.hashSync(senha, 10);
+        await dbRun('INSERT INTO professores (nome, usuario, senha, tipo) VALUES (?, ?, ?, ?)', [nome, usuario, hash, 'professor']);
+        res.json({ sucesso: true });
+    } catch (e) {
+        if (e.message.includes('UNIQUE')) return res.status(400).json({ erro: 'Usuário já existe' });
+        res.status(500).json({ erro: 'Erro ao cadastrar professor' });
+    }
+});
+
+// ===== LISTAR PROFESSORES (rota master) =====
+app.get('/api/professores/listar', autenticar, async (req, res) => {
+    if (req.user.tipo !== 'master') return res.status(403).json({ erro: 'Acesso negado' });
+    try {
+        const linhas = await dbAll('SELECT id, nome, usuario, tipo FROM professores ORDER BY id DESC');
+        res.json(linhas);
+    } catch {
+        res.status(500).json({ erro: 'Erro ao buscar professores' });
+    }
+});
 
 // ===== BACKUP AUTOMÁTICO DIÁRIO =====
 cron.schedule('0 2 * * *', () => {

@@ -16,8 +16,9 @@ body {
 
 .sidebar {
     width: 240px;
-    background-color: #01529f;
-    color: #fff;
+    /* background: linear-gradient(#68C2D4, #38798A, #597999 ); */
+    color: #000;
+    background-color: rgb(204, 220, 235);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -27,13 +28,14 @@ body {
 .sidebar-header {
     text-align: center;
     padding: 1.8rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    background-image: url(https://media.istockphoto.com/id/1402430797/pt/foto/business-3d-tablet-virtual-growth-arrow-financial-graph-on-digital-technology-strategy.jpg?s=612x612&w=0&k=20&c=65x1nbe9UvovgfGHUW18q2YkQhDKfFlfNeuhYPgdzxQ=);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+    background-image: url('https://media.istockphoto.com/id/1146368775/pt/vetorial/abstract-blue-square-background.jpg?s=612x612&w=0&k=20&c=tRLKkhb4TMKoKCkL11j1f1ij25zfNqPHKi-F9K9Ic-o=');
     background-size: cover;
+    border-radius: 10px;
 }
 
 .sidebar-header h4 {
-    color: #f4f6f9;
+    color: #000000;
     font-size: 20px;
     font-weight: 900;
     margin-top: 0.5rem;
@@ -43,6 +45,8 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
+    font-weight: 700;
+    line-height: 30px;
 }
 
 .nav-links li {
@@ -54,18 +58,22 @@ body {
 .nav-links li:hover,
 .nav-links li.active {
     background-color: #002244;
+    color: floralwhite;
 }
 
 .logout {
     padding: 15px;
-    background: #001b3a;
+    background: #023e83;
+    color: #f4f6f9;
     text-align: center;
     cursor: pointer;
+    font-weight: 700;
     transition: background 0.3s;
 }
 
 .logout:hover {
     background: #000f2a;
+    color: floralwhite;
 }
 
 .content {
@@ -73,6 +81,10 @@ body {
     padding: 2rem;
     overflow-y: auto;
     transition: opacity 0.3s;
+}
+
+.cards-container{
+    padding: 10px;
 }
 
 .card {
@@ -123,5 +135,6 @@ thead {
 }
 
 .fade {
+    margin-top: 1.2rem;
     animation: fadeIn 0.4s ease;
 }

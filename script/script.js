@@ -42,11 +42,8 @@ if (form) {
                 alert(dados.erro || "Usuário ou senha incorretos");
                 return;
             }
-
-            // Login bem-sucedido
             localStorage.setItem("token", dados.token);
-            alert(`Bem-vindo(a), ${dados.nome}!`);
-
+            
             // Redirecionamento
             if (dados.tipo === "master") {
                 window.location.href = "/painel-master.html";
@@ -59,3 +56,5 @@ if (form) {
         }
     });
 }
+
+
