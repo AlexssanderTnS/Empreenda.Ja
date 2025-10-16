@@ -8,16 +8,23 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 
 const app = express();
+
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app",
-            "http://localhost:5500"
+            "https://empreenda-ja.vercel.app", // seu site na Vercel
+            "http://localhost:5500"            // para testes locais
         ],
-        methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type", "Authorization"]
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
     })
 );
+
+// Garante que o pré-flight OPTIONS receba resposta
+app.options("*", cors());
+app.use(express.json());
+
 app.use(express.json());
 
 const SECRET = process.env.JWT_SECRET || "0000";
@@ -156,19 +163,24 @@ app.post("/api/professores", autenticar, async (req, res) => {
     }
 });
 
-// Listar professores
-app.get("/api/professores/listar", autenticar, async (req, res) => {
-    if (req.user.tipo !== "master")
-        return res.status(403).json({ erro: "Acesso negado" });
+// ===== LISTAR PROFESSORES (somente master) =====
+// ===== LISTAR PROFESSORES (somente master) =====
+app.get('/api/professores/listar', autenticar, async (req, res) => {
+    if (req.user.tipo !== 'master') {
+        return res.status(403).json({ erro: 'Acesso negado' });
+    }
 
     try {
-        const professores = await dbQuery("SELECT id, nome, usuario, tipo FROM professores ORDER BY id DESC");
+        const professores = await dbQuery(
+            'SELECT id, nome, usuario, tipo FROM professores ORDER BY id DESC'
+        );
         res.json(professores);
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ erro: "Erro ao buscar professores" });
+        console.error('Erro ao buscar professores:', e);
+        res.status(500).json({ erro: 'Erro ao buscar professores' });
     }
 });
+
 
 // Lançar frequência
 app.post("/api/frequencia", autenticar, async (req, res) => {

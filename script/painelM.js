@@ -1,4 +1,4 @@
-// ==================== PAINEL MASTER COMPLETO ====================
+// ==================== PAINEL MASTER COMPLETO (com exclusão funcional) ====================
 
 (function iniciarPainel() {
   if (document.readyState === "loading") {
@@ -9,7 +9,7 @@
   console.log("✅ Painel Master inicializado");
 
   // ==================== CONFIGURAÇÕES ====================
-  const API_URL = "https://empreenda-ja.onrender.com";
+  const API_URL = "https://empreenda-ja.onrender.com"; // 🔧 troque se sua API da Render tiver outro endereço
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -19,7 +19,6 @@
 
   const conteudo = document.getElementById("conteudo");
   const navItems = document.querySelectorAll(".nav-links li");
-
   if (!conteudo) return;
 
   // ==================== VALIDAÇÃO DO TOKEN ====================
@@ -97,20 +96,58 @@
       const tbody = document.querySelector("#tabelaProfessores tbody");
       if (!tbody) return;
 
-      tbody.innerHTML =
-        dados.length === 0
-          ? "<tr><td colspan='4'>Nenhum professor encontrado.</td></tr>"
-          : dados
-              .map(
-                (p) =>
-                  `<tr><td>${p.id}</td><td>${p.nome}</td><td>${p.usuario}</td><td>${p.tipo}</td></tr>`
-              )
-              .join("");
+      if (dados.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>Nenhum professor encontrado.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = dados
+        .map(
+          (p) => `
+            <tr>
+              <td>${p.id}</td>
+              <td>${p.nome}</td>
+              <td>${p.usuario}</td>
+              <td>${p.tipo}</td>
+              <td>
+                <button class="btn-excluir" data-id="${p.id}">🗑️ Excluir</button>
+              </td>
+            </tr>`
+        )
+        .join('');
+
+      // ===== AÇÃO DO BOTÃO EXCLUIR =====
+      document.querySelectorAll('.btn-excluir').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const confirmar = confirm('Tem certeza que deseja excluir este professor?');
+          if (!confirmar) return;
+
+          try {
+            const resp = await fetch(`${API_URL}/api/professores/${id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const dados = await resp.json();
+            if (resp.ok) {
+              alert('✅ Professor excluído com sucesso!');
+              await carregarProfessores();
+            } else {
+              alert('⚠️ ' + (dados.erro || 'Erro ao excluir professor.'));
+            }
+          } catch (erro) {
+            alert('Erro de comunicação com o servidor.');
+            console.error(erro);
+          }
+        });
+      });
+
     } catch (erro) {
       console.error("Erro ao carregar professores:", erro);
       const tbody = document.querySelector("#tabelaProfessores tbody");
       if (tbody)
-        tbody.innerHTML = "<tr><td colspan='4'>Erro ao carregar lista.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='5'>Erro ao carregar lista.</td></tr>";
     }
   }
 
@@ -178,8 +215,16 @@
       <div class="fade">
         <p>Lista de professores cadastrados no sistema.</p>
         <table class="table table-striped" id="tabelaProfessores">
-          <thead><tr><th>ID</th><th>Nome</th><th>Usuário</th><th>Tipo</th></tr></thead>
-          <tbody><tr><td colspan="4">Carregando...</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Usuário</th>
+              <th>Tipo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="5">Carregando...</td></tr></tbody>
         </table>
       </div>
     `,
