@@ -39,51 +39,53 @@
     }
   }
 
-  // ==================== RELATÓRIOS ====================
-  async function carregarRelatorios() {
-    const tokenValido = await validarToken();
-    if (!tokenValido) return;
+ // ==================== RELATÓRIOS ====================
+async function carregarRelatorios() {
+  const tokenValido = await validarToken();
+  if (!tokenValido) return;
 
-    try {
-      const resposta = await fetch(`${API_URL}/api/relatorios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dados = await resposta.json();
+  try {
+    const resposta = await fetch(`${API_URL}/api/relatorios`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const dados = await resposta.json();
 
-      let linhas =
-        dados.length === 0
-          ? `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`
-          : dados
+    let linhas =
+      dados.length === 0
+        ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
+        : dados
             .map(
               (l) => `
-            <tr>
-              <td>${l.id}</td>
-              <td>${l.professor_nome}</td>
-              <td>${l.curso}</td>
-              <td>${l.local}</td>
-              <td>${l.turma}</td>
-              <td>${l.data}</td>
-              <td>${l.alunos}</td>
-            </tr>`
+              <tr>
+                <td>${l.professor_nome}</td>
+                <td>${l.data}</td>
+                <td>${l.alunos ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">📥 Baixar</a>` : "—"}</td>
+                <td>${l.curso || "—"}</td>
+              </tr>`
             )
             .join("");
 
-      conteudo.innerHTML = `
-        <header class="topbar"><h2>📄 Relatórios</h2></header>
-        <div class="fade">
-          <table class="table table-striped table-bordered">
-            <thead class="table-dark">
-              <tr>
-                <th>ID</th><th>Professor</th><th>Curso</th><th>Local</th><th>Turma</th><th>Data</th><th>Alunos</th>
-              </tr>
-            </thead>
-            <tbody>${linhas}</tbody>
-          </table>
-        </div>`;
-    } catch (erro) {
-      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
-    }
+    conteudo.innerHTML = `
+      <header class="topbar"><h2>📄 Relatórios de Envios</h2></header>
+      <div class="fade">
+        <table class="table table-striped table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th>Professor</th>
+              <th>Data do Envio</th>
+              <th>Arquivo</th>
+              <th>Curso</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`;
+  } catch (erro) {
+    conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
+    console.error("Erro ao carregar relatórios:", erro);
   }
+}
+
 
   // ==================== LISTAR PROFESSORES ====================
   async function carregarProfessores() {
@@ -203,10 +205,6 @@
           <div class="card"><h4>Último Backup</h4><h2>--</h2></div>
         </div>
       </div>
-    `,
-    frequencias: `
-      <header class="topbar"><h2>🗓️ Frequências</h2></header>
-      <div class="fade"><p>Controle e visualização das presenças lançadas pelos professores.</p></div>
     `,
     relatorios: `
       <header class="topbar"><h2>📄 Relatórios</h2></header>

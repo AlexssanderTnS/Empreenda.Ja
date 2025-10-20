@@ -153,10 +153,26 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
-        const nomeArquivo = `${req.user.nome.replace(/\s+/g, "_")}_${Date.now()}${ext}`;
+
+        // Nome do professor tratado
+        const nomeProf = req.user.nome
+            .replace(/\s+/g, "_")       // troca espaços por "_"
+            .normalize("NFD")           // remove acentos
+            .replace(/[\u0300-\u036f]/g, "");
+
+        // Data formatada dd_mm_aaaa
+        const agora = new Date();
+        const dia = String(agora.getDate()).padStart(2, "0");
+        const mes = String(agora.getMonth() + 1).padStart(2, "0");
+        const ano = agora.getFullYear();
+        const hora = String(agora.getHours()).padStart(2, "0");
+        const minuto = String(agora.getMinutes()).padStart(2, "0");
+
+        const nomeArquivo = `Prof_${nomeProf}_${dia}_${mes}_${ano}_${hora}_${minuto}${ext}`;
         cb(null, nomeArquivo);
     },
 });
+
 
 const upload = multer({ storage });
 
