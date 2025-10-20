@@ -1,4 +1,4 @@
-// ==================== PAINEL MASTER COMPLETO (com exclusão funcional) ====================
+// ==================== PAINEL MASTER COMPLETO ====================
 
 (function iniciarPainel() {
   if (document.readyState === "loading") {
@@ -8,6 +8,7 @@
 
   console.log("✅ Painel Master inicializado");
 
+  // ==================== CONFIGURAÇÕES ====================
   const API_URL = "https://empreenda-ja.onrender.com";
   const token = localStorage.getItem("token");
 
@@ -20,9 +21,11 @@
   const navItems = document.querySelectorAll(".nav-links li");
   if (!conteudo) return;
 
+  // ==================== VALIDAÇÃO DO TOKEN ====================
   async function validarToken() {
     try {
       const resp = await fetch(`${API_URL}/api/relatorios`, {
+        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (resp.status === 401) {
@@ -33,6 +36,52 @@
       return resp.ok;
     } catch {
       return false;
+    }
+  }
+
+  // ==================== RELATÓRIOS ====================
+  async function carregarRelatorios() {
+    const tokenValido = await validarToken();
+    if (!tokenValido) return;
+
+    try {
+      const resposta = await fetch(`${API_URL}/api/relatorios`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dados = await resposta.json();
+
+      let linhas =
+        dados.length === 0
+          ? `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`
+          : dados
+              .map(
+                (l) => `
+            <tr>
+              <td>${l.id}</td>
+              <td>${l.professor_nome}</td>
+              <td>${l.curso}</td>
+              <td>${l.local}</td>
+              <td>${l.turma}</td>
+              <td>${l.data}</td>
+              <td>${l.alunos}</td>
+            </tr>`
+              )
+              .join("");
+
+      conteudo.innerHTML = `
+        <header class="topbar"><h2>📄 Relatórios</h2></header>
+        <div class="fade">
+          <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th><th>Professor</th><th>Curso</th><th>Local</th><th>Turma</th><th>Data</th><th>Alunos</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>`;
+    } catch (erro) {
+      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
     }
   }
 
@@ -65,34 +114,33 @@
               </td>
             </tr>`
         )
-        .join('');
+        .join("");
 
-      document.querySelectorAll('.btn-excluir').forEach((btn) => {
-        btn.addEventListener('click', async () => {
+      document.querySelectorAll(".btn-excluir").forEach((btn) => {
+        btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
-          const confirmar = confirm('Tem certeza que deseja excluir este professor?');
+          const confirmar = confirm("Tem certeza que deseja excluir este professor?");
           if (!confirmar) return;
 
           try {
             const resp = await fetch(`${API_URL}/api/professores/${id}`, {
-              method: 'DELETE',
+              method: "DELETE",
               headers: { Authorization: `Bearer ${token}` },
             });
 
             const resultado = await resp.json();
             if (resp.ok) {
-              alert('✅ Professor excluído com sucesso!');
+              alert("✅ Professor excluído com sucesso!");
               await carregarProfessores();
             } else {
-              alert('⚠️ ' + (resultado.erro || 'Erro ao excluir professor.'));
+              alert("⚠️ " + (resultado.erro || "Erro ao excluir professor."));
             }
           } catch (erro) {
-            alert('Erro de comunicação com o servidor.');
+            alert("Erro de comunicação com o servidor.");
             console.error(erro);
           }
         });
       });
-
     } catch (erro) {
       console.error("Erro ao carregar professores:", erro);
       const tbody = document.querySelector("#tabelaProfessores tbody");
@@ -145,6 +193,17 @@
 
   // ==================== SEÇÕES ====================
   const secoes = {
+    dashboard: `
+      <header class="topbar"><h2>📊 Painel de Controle</h2></header>
+      <div class="fade">
+        <p>Bem-vindo ao painel administrativo do Empreenda Já.</p>
+        <div class="cards-container">
+          <div class="card"><h4>Professores</h4><h2>--</h2></div>
+          <div class="card"><h4>Frequências</h4><h2>--</h2></div>
+          <div class="card"><h4>Último Backup</h4><h2>--</h2></div>
+        </div>
+      </div>
+    `,
     professores: `
       <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
       <div class="fade">
@@ -176,6 +235,10 @@
         </div>
       </div>
     `,
+    relatorios: `
+      <header class="topbar"><h2>📄 Relatórios</h2></header>
+      <div class="fade"><p>Carregando relatórios...</p></div>
+    `,
   };
 
   // ==================== TROCA DE ABAS ====================
@@ -193,11 +256,16 @@
         } else if (secao === "cadastro") {
           conteudo.innerHTML = secoes.cadastro;
           configurarFormularioCadastro();
+        } else if (secao === "relatorios") {
+          await carregarRelatorios();
+        } else {
+          conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
         }
       });
     });
   }
 
+  // ==================== INICIALIZAÇÃO ====================
   ativarTrocaAbas();
-  conteudo.innerHTML = secoes.professores;
+  conteudo.innerHTML = secoes.dashboard;
 })();
