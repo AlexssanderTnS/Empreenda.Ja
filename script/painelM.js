@@ -116,6 +116,25 @@
         )
         .join('');
 
+
+        // ===== EXCLUIR PROFESSOR (somente master) =====
+app.delete('/api/professores/:id', autenticar, async (req, res) => {
+  if (req.user.tipo !== 'master') {
+    return res.status(403).json({ erro: 'Acesso negado' });
+  }
+
+  const { id } = req.params;
+
+  try {
+    await dbQuery('DELETE FROM professores WHERE id = $1', [id]);
+    res.json({ sucesso: true, mensagem: 'Professor excluído com sucesso.' });
+  } catch (e) {
+    console.error('Erro ao excluir professor:', e);
+    res.status(500).json({ erro: 'Erro ao excluir professor.' });
+  }
+});
+
+
       // ===== AÇÃO DO BOTÃO EXCLUIR =====
       document.querySelectorAll('.btn-excluir').forEach((btn) => {
         btn.addEventListener('click', async () => {
