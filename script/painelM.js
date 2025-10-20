@@ -8,8 +8,7 @@
 
   console.log("✅ Painel Master inicializado");
 
-  // ==================== CONFIGURAÇÕES ====================
-  const API_URL = "https://empreenda-ja.onrender.com"; // 🔧 troque se sua API da Render tiver outro endereço
+  const API_URL = "https://empreenda-ja.onrender.com";
   const token = localStorage.getItem("token");
 
   if (!token) {
@@ -21,11 +20,9 @@
   const navItems = document.querySelectorAll(".nav-links li");
   if (!conteudo) return;
 
-  // ==================== VALIDAÇÃO DO TOKEN ====================
   async function validarToken() {
     try {
       const resp = await fetch(`${API_URL}/api/relatorios`, {
-        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (resp.status === 401) {
@@ -36,52 +33,6 @@
       return resp.ok;
     } catch {
       return false;
-    }
-  }
-
-  // ==================== RELATÓRIOS ====================
-  async function carregarRelatorios() {
-    const tokenValido = await validarToken();
-    if (!tokenValido) return;
-
-    try {
-      const resposta = await fetch(`${API_URL}/api/relatorios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dados = await resposta.json();
-
-      let linhas =
-        dados.length === 0
-          ? `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`
-          : dados
-              .map(
-                (l) => `
-            <tr>
-              <td>${l.id}</td>
-              <td>${l.professor_nome}</td>
-              <td>${l.curso}</td>
-              <td>${l.local}</td>
-              <td>${l.turma}</td>
-              <td>${l.data}</td>
-              <td>${l.alunos}</td>
-            </tr>`
-              )
-              .join("");
-
-      conteudo.innerHTML = `
-        <header class="topbar"><h2>📄 Relatórios</h2></header>
-        <div class="fade">
-          <table class="table table-striped table-bordered">
-            <thead class="table-dark">
-              <tr>
-                <th>ID</th><th>Professor</th><th>Curso</th><th>Local</th><th>Turma</th><th>Data</th><th>Alunos</th>
-              </tr>
-            </thead>
-            <tbody>${linhas}</tbody>
-          </table>
-        </div>`;
-    } catch (erro) {
-      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
     }
   }
 
@@ -116,26 +67,6 @@
         )
         .join('');
 
-
-        // ===== EXCLUIR PROFESSOR (somente master) =====
-app.delete('/api/professores/:id', autenticar, async (req, res) => {
-  if (req.user.tipo !== 'master') {
-    return res.status(403).json({ erro: 'Acesso negado' });
-  }
-
-  const { id } = req.params;
-
-  try {
-    await dbQuery('DELETE FROM professores WHERE id = $1', [id]);
-    res.json({ sucesso: true, mensagem: 'Professor excluído com sucesso.' });
-  } catch (e) {
-    console.error('Erro ao excluir professor:', e);
-    res.status(500).json({ erro: 'Erro ao excluir professor.' });
-  }
-});
-
-
-      // ===== AÇÃO DO BOTÃO EXCLUIR =====
       document.querySelectorAll('.btn-excluir').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const id = btn.dataset.id;
@@ -148,12 +79,12 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
               headers: { Authorization: `Bearer ${token}` },
             });
 
-            const dados = await resp.json();
+            const resultado = await resp.json();
             if (resp.ok) {
               alert('✅ Professor excluído com sucesso!');
               await carregarProfessores();
             } else {
-              alert('⚠️ ' + (dados.erro || 'Erro ao excluir professor.'));
+              alert('⚠️ ' + (resultado.erro || 'Erro ao excluir professor.'));
             }
           } catch (erro) {
             alert('Erro de comunicação com o servidor.');
@@ -214,21 +145,6 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
 
   // ==================== SEÇÕES ====================
   const secoes = {
-    dashboard: `
-      <header class="topbar"><h2>📊 Painel de Controle</h2></header>
-      <div class="fade">
-        <p>Resumo geral do sistema.</p>
-        <div class="cards-container">
-          <div class="card"><h4>Professores</h4><h2>12</h2></div>
-          <div class="card"><h4>Frequências</h4><h2>22</h2></div>
-          <div class="card"><h4>Último Backup</h4><h2>14/10/2025</h2></div>
-        </div>
-      </div>
-    `,
-    frequencias: `
-      <header class="topbar"><h2>🗓️ Frequências</h2></header>
-      <div class="fade"><p>Controle e visualização das presenças lançadas pelos professores.</p></div>
-    `,
     professores: `
       <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
       <div class="fade">
@@ -260,21 +176,6 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
         </div>
       </div>
     `,
-    backups: `
-      <header class="topbar"><h2>💾 Backups</h2></header>
-      <div class="fade">
-        <p>Últimos backups automáticos realizados:</p>
-        <ul>
-          <li>backup_2025-10-14.db</li>
-          <li>backup_2025-10-13.db</li>
-          <li>backup_2025-10-12.db</li>
-        </ul>
-      </div>
-    `,
-    config: `
-      <header class="topbar"><h2>⚙️ Configurações</h2></header>
-      <div class="fade"><p>Preferências e ajustes da conta do administrador.</p></div>
-    `,
   };
 
   // ==================== TROCA DE ABAS ====================
@@ -286,19 +187,17 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
 
         const secao = item.dataset.section;
 
-        if (secao === "relatorios") {
-          await carregarRelatorios();
-        } else if (secao === "professores") {
-          conteudo.innerHTML = secoes[secao];
+        if (secao === "professores") {
+          conteudo.innerHTML = secoes.professores;
           await carregarProfessores();
-        } else {
-          conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
-          if (secao === "cadastro") configurarFormularioCadastro();
+        } else if (secao === "cadastro") {
+          conteudo.innerHTML = secoes.cadastro;
+          configurarFormularioCadastro();
         }
       });
     });
   }
 
   ativarTrocaAbas();
-  conteudo.innerHTML = secoes.dashboard;
+  conteudo.innerHTML = secoes.professores;
 })();
