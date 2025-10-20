@@ -54,8 +54,8 @@
         dados.length === 0
           ? `<tr><td colspan="7" class="text-center text-muted">Nenhum relatório encontrado.</td></tr>`
           : dados
-              .map(
-                (l) => `
+            .map(
+              (l) => `
             <tr>
               <td>${l.id}</td>
               <td>${l.professor_nome}</td>
@@ -65,8 +65,8 @@
               <td>${l.data}</td>
               <td>${l.alunos}</td>
             </tr>`
-              )
-              .join("");
+            )
+            .join("");
 
       conteudo.innerHTML = `
         <header class="topbar"><h2>📄 Relatórios</h2></header>
@@ -204,6 +204,10 @@
         </div>
       </div>
     `,
+    frequencias: `
+      <header class="topbar"><h2>🗓️ Frequências</h2></header>
+      <div class="fade"><p>Controle e visualização das presenças lançadas pelos professores.</p></div>
+    `,
     professores: `
       <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
       <div class="fade">
@@ -234,6 +238,21 @@
           </form>
         </div>
       </div>
+    `,
+    backups: `
+      <header class="topbar"><h2>💾 Backups</h2></header>
+      <div class="fade">
+        <p>Últimos backups automáticos realizados:</p>
+        <ul>
+          <li>backup_2025-10-14.db</li>
+          <li>backup_2025-10-13.db</li>
+          <li>backup_2025-10-12.db</li>
+        </ul>
+      </div>
+    `,
+    config: `
+      <header class="topbar"><h2>⚙️ Configurações</h2></header>
+      <div class="fade"><p>Preferências e ajustes da conta do administrador.</p></div>
     `,
     relatorios: `
       <header class="topbar"><h2>📄 Relatórios</h2></header>
