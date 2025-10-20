@@ -1,14 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Área do Professor</title>
-</head>
-<body>
-    
-    
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Painel do Professor - Empreenda.Já</title>
+        <link rel="stylesheet" href="painelP.css">
+    </head>
+
+    <body>
+        <header class="topbar">
+            <h1>Painel do Professor</h1>
+            <button id="logout" class="btn-sair">Sair</button>
+        </header>
+
+        <main class="container">
+            <h2 id="bemvindo">Bem-vindo(a)!</h2>
+
+            <section class="acoes">
+                <h3>Baixe a planilha, preencha e envie logo abaixo.</h3>
+                <a href="https://empreenda-ja.onrender.com/api/frequencia/modelo" target="_blank" class="btn baixar">Baixar Modelo da Planilha</a>
+            </section>
+
+            <section class="upload">
+                <h3>Enviar Planilha Preenchida</h3>
+                <form id="formUpload">
+                    <input type="file" id="arquivo" accept=".xlsx" required>
+                    <button type="submit" class="btn enviar">Enviar</button>
+                </form>
+            </section>
+
+            <section class="historico">
+                <h3>Seus Envios Recentes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Arquivo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-envios">
+                        <tr>
+                            <td colspan="2">Carregando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+        <script src="/script/painelP.js"></script>
+    </body>
+
+    </html>
 
 
-</body>
-</html>
+
+

@@ -6,6 +6,10 @@ import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
 
 const app = express();
 
@@ -24,8 +28,7 @@ app.use(
 // Garante que o pré-flight OPTIONS receba resposta
 app.options("*", cors());
 app.use(express.json());
-
-app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const SECRET = process.env.JWT_SECRET || "0000";
 
@@ -47,45 +50,45 @@ async function seed() {
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS professores (
-      id SERIAL PRIMARY KEY,
-      nome TEXT NOT NULL,
-      usuario TEXT UNIQUE NOT NULL,
-      senha TEXT NOT NULL,
-      tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
+        id SERIAL PRIMARY KEY,
+        nome TEXT NOT NULL,
+        usuario TEXT UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
     );
-  `);
+`);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS frequencias (
-      id SERIAL PRIMARY KEY,
-      professor_id INTEGER NOT NULL,
-      curso TEXT NOT NULL,
-      local TEXT NOT NULL,
-      turma TEXT NOT NULL,
-      data TEXT NOT NULL,
-      alunos TEXT NOT NULL,
-      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id SERIAL PRIMARY KEY,
+        professor_id INTEGER NOT NULL,
+        curso TEXT NOT NULL,
+        local TEXT NOT NULL,
+        turma TEXT NOT NULL,
+        data TEXT NOT NULL,
+        alunos TEXT NOT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-  `);
+`);
 
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (usuario) DO NOTHING`,
         ["Administrador", "master", senhaMaster, "master"]
     );
 
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. Maria", "maria", senhaProf, "professor"]
     );
 
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. João", "joao", senhaProf, "professor"]
     );
 }
@@ -139,6 +142,76 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
+// ====== CONFIGURAÇÃO DO UPLOAD (MULTER) ======
+
+// Cria pasta se não existir
+const uploadDir = "./uploads/frequencias";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Define como o arquivo será salvo
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const nomeArquivo = `${req.user.nome.replace(/\s+/g, "_")}_${Date.now()}${ext}`;
+        cb(null, nomeArquivo);
+    },
+});
+
+const upload = multer({ storage });
+
+// ====== ROTA 1: Download do modelo da ata ======
+app.get("/api/frequencia/modelo", autenticar, (req, res) => {
+    const modeloPath = path.resolve("./Planilha.xlsx");
+    if (fs.existsSync(modeloPath)) {
+        res.download(modeloPath);
+    } else {
+        res.status(404).json({ erro: "Modelo não encontrado no servidor." });
+    }
+});
+
+// ====== ROTA 2: Upload da planilha preenchida ======
+app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ erro: "Nenhum arquivo enviado." });
+    }
+
+    try {
+        const nomeArquivo = req.file.filename;
+        const dataHoje = new Date().toISOString().split("T")[0];
+
+        // Salva no banco: quem enviou, qual arquivo e a data
+        await dbQuery(
+            `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+        );
+
+        res.json({ sucesso: true, arquivo: nomeArquivo });
+    } catch (erro) {
+        console.error("Erro ao salvar upload:", erro);
+        res.status(500).json({ erro: "Erro ao salvar frequência." });
+    }
+});
+
+// ====== ROTA 3: Listar envios do professor ======
+app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
+    try {
+        const linhas = await dbQuery(
+            `SELECT id, data, alunos 
+            FROM frequencias 
+            WHERE professor_id = $1 
+            ORDER BY id DESC`,
+            [req.user.id]
+        );
+        res.json(linhas);
+    } catch (erro) {
+        console.error("Erro ao listar frequências:", erro);
+        res.status(500).json({ erro: "Erro ao carregar envios." });
+    }
+});
+
+
 // Cadastro de professor (somente master)
 app.post("/api/professores", autenticar, async (req, res) => {
     if (req.user.tipo !== "master")
@@ -152,7 +225,7 @@ app.post("/api/professores", autenticar, async (req, res) => {
         const hash = bcrypt.hashSync(senha, 10);
         await dbQuery(
             `INSERT INTO professores (nome, usuario, senha, tipo)
-       VALUES ($1, $2, $3, 'professor')`,
+            VALUES ($1, $2, $3, 'professor')`,
             [nome, usuario, hash]
         );
         res.json({ sucesso: true, mensagem: "Professor cadastrado com sucesso" });
@@ -225,10 +298,10 @@ app.get("/api/relatorios", autenticar, async (req, res) => {
 
     try {
         const linhas = await dbQuery(`
-      SELECT f.*, p.nome AS professor_nome
-      FROM frequencias f
-      JOIN professores p ON p.id = f.professor_id
-      ORDER BY data DESC, f.id DESC
+            SELECT f.*, p.nome AS professor_nome
+            FROM frequencias f
+            JOIN professores p ON p.id = f.professor_id
+            ORDER BY data DESC, f.id DESC
     `);
         res.json(linhas);
     } catch (e) {

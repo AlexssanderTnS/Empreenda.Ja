@@ -208,6 +208,10 @@
       <header class="topbar"><h2>🗓️ Frequências</h2></header>
       <div class="fade"><p>Controle e visualização das presenças lançadas pelos professores.</p></div>
     `,
+    relatorios: `
+      <header class="topbar"><h2>📄 Relatórios</h2></header>
+      <div class="fade"><p>Carregando relatórios...</p></div>
+    `,
     professores: `
       <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
       <div class="fade">
@@ -253,10 +257,6 @@
     config: `
       <header class="topbar"><h2>⚙️ Configurações</h2></header>
       <div class="fade"><p>Preferências e ajustes da conta do administrador.</p></div>
-    `,
-    relatorios: `
-      <header class="topbar"><h2>📄 Relatórios</h2></header>
-      <div class="fade"><p>Carregando relatórios...</p></div>
     `,
   };
 
