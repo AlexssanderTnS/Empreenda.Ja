@@ -161,14 +161,16 @@ const storage = multer.diskStorage({
             .replace(/[\u0300-\u036f]/g, "");
 
         // Data formatada dd_mm_aaaa
-        const agora = new Date();
+        // Força o horário para o fuso de Brasília (UTC-3)
+        const agora = new Date(new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }));
+
         const dia = String(agora.getDate()).padStart(2, "0");
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
         const ano = agora.getFullYear();
         const hora = String(agora.getHours()).padStart(2, "0");
         const minuto = String(agora.getMinutes()).padStart(2, "0");
 
-        const nomeArquivo = `Prof_${nomeProf}_${dia}_${mes}_${ano}_${hora}_${minuto}${ext}`;
+        const nomeArquivo = `Prof.${nomeProf}_${dia}_${mes}_${ano}_${hora}.${minuto}${ext}`;
         cb(null, nomeArquivo);
     },
 });
