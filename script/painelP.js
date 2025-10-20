@@ -10,6 +10,47 @@ document.getElementById("logout").addEventListener("click", () => {
     window.location.href = "index.html";
 });
 
+// ===== BOTÃO DE DOWNLOAD DO MODELO =====
+document.addEventListener("DOMContentLoaded", () => {
+    const botaoDownload = document.getElementById("btnDownloadModelo");
+    if (!botaoDownload) return;
+
+    botaoDownload.addEventListener("click", async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Você precisa estar logado para baixar o modelo.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        try {
+            const resp = await fetch("https://empreenda-ja.onrender.com/api/frequencia/modelo", {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!resp.ok) {
+                alert("Erro ao baixar o modelo. Tente novamente.");
+                return;
+            }
+
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Planilha.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (erro) {
+            console.error("Erro no download:", erro);
+            alert("Erro de comunicação com o servidor.");
+        }
+    });
+});
+
 // Saudação personalizada
 (async () => {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -64,8 +105,8 @@ async function carregarEnvios() {
             .map(
                 (f) => `
         <tr>
-          <td>${f.data}</td>
-          <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
+            <td>${f.data}</td>
+            <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
         </tr>`
             )
             .join("");
