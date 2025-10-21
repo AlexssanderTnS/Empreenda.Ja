@@ -13,54 +13,56 @@ document.getElementById("logout").addEventListener("click", () => {
     window.location.href = "index.html";
 });
 
-// ==================== TROCA DE SENHA OBRIGATÓRIA ====================
-const precisaTrocar = localStorage.getItem("precisaTrocar") === "true";
+document.addEventListener("DOMContentLoaded", () => {
+    const precisaTrocar = localStorage.getItem("precisaTrocar") === "true";
 
-if (precisaTrocar) {
-    const modal = document.getElementById("modalTrocaSenha");
-    modal.style.display = "flex";
+    if (precisaTrocar) {
+        const modal = document.getElementById("modalTrocaSenha");
+        modal.style.display = "flex";
 
-    const form = document.getElementById("formTrocaSenha");
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        const form = document.getElementById("formTrocaSenha");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-        const senhaAtual = document.getElementById("senhaAtual").value.trim();
-        const novaSenha = document.getElementById("novaSenha").value.trim();
-        const confirmarSenha = document.getElementById("confirmarSenha").value.trim();
+            const senhaAtual = document.getElementById("senhaAtual").value.trim();
+            const novaSenha = document.getElementById("novaSenha").value.trim();
+            const confirmarSenha = document.getElementById("confirmarSenha").value.trim();
 
-        if (!senhaAtual || !novaSenha || !confirmarSenha) {
-            alert("Preencha todos os campos!");
-            return;
-        }
-        if (novaSenha !== confirmarSenha) {
-            alert("As senhas novas não coincidem!");
-            return;
-        }
-
-        try {
-            const resp = await fetch(`${API_URL}/api/alterar-senha`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ senhaAtual, novaSenha }),
-            });
-
-            const dados = await resp.json();
-            if (resp.ok) {
-                alert("✅ Senha alterada com sucesso!");
-                localStorage.removeItem("precisaTrocar");
-                modal.style.display = "none";
-            } else {
-                alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+            if (!senhaAtual || !novaSenha || !confirmarSenha) {
+                alert("Preencha todos os campos!");
+                return;
             }
-        } catch (erro) {
-            console.error("Erro ao alterar senha:", erro);
-            alert("Erro de comunicação com o servidor.");
-        }
-    });
-}
+            if (novaSenha !== confirmarSenha) {
+                alert("As senhas novas não coincidem!");
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_URL}/api/alterar-senha`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ senhaAtual, novaSenha }),
+                });
+
+                const dados = await resp.json();
+                if (resp.ok) {
+                    alert("✅ Senha alterada com sucesso!");
+                    localStorage.removeItem("precisaTrocar");
+                    modal.style.display = "none";
+                } else {
+                    alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+                }
+            } catch (erro) {
+                console.error("Erro ao alterar senha:", erro);
+                alert("Erro de comunicação com o servidor.");
+            }
+        });
+    }
+});
+
 
 // ==================== DOWNLOAD DO MODELO ====================
 document.addEventListener("DOMContentLoaded", () => {
