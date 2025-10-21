@@ -1,3 +1,4 @@
+// ==================== CONFIGURAÇÕES GERAIS ====================
 const API_URL = "https://empreenda-ja.onrender.com";
 const token = localStorage.getItem("token");
 
@@ -5,26 +6,70 @@ if (!token) {
     window.location.href = "index.html";
 }
 
+// ===== BOTÃO DE SAIR =====
 document.getElementById("logout").addEventListener("click", () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("precisaTrocar");
     window.location.href = "index.html";
 });
 
-// ===== BOTÃO DE DOWNLOAD DO MODELO =====
+// ==================== TROCA DE SENHA OBRIGATÓRIA ====================
+const precisaTrocar = localStorage.getItem("precisaTrocar") === "true";
+
+if (precisaTrocar) {
+    const modal = document.getElementById("modalTrocaSenha");
+    modal.style.display = "flex";
+
+    const form = document.getElementById("formTrocaSenha");
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const senhaAtual = document.getElementById("senhaAtual").value.trim();
+        const novaSenha = document.getElementById("novaSenha").value.trim();
+        const confirmarSenha = document.getElementById("confirmarSenha").value.trim();
+
+        if (!senhaAtual || !novaSenha || !confirmarSenha) {
+            alert("Preencha todos os campos!");
+            return;
+        }
+        if (novaSenha !== confirmarSenha) {
+            alert("As senhas novas não coincidem!");
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_URL}/api/alterar-senha`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ senhaAtual, novaSenha }),
+            });
+
+            const dados = await resp.json();
+            if (resp.ok) {
+                alert("✅ Senha alterada com sucesso!");
+                localStorage.removeItem("precisaTrocar");
+                modal.style.display = "none";
+            } else {
+                alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+            }
+        } catch (erro) {
+            console.error("Erro ao alterar senha:", erro);
+            alert("Erro de comunicação com o servidor.");
+        }
+    });
+}
+
+// ==================== DOWNLOAD DO MODELO ====================
 document.addEventListener("DOMContentLoaded", () => {
     const botaoDownload = document.getElementById("btnDownloadModelo");
     if (!botaoDownload) return;
 
     botaoDownload.addEventListener("click", async () => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            alert("Você precisa estar logado para baixar o modelo.");
-            window.location.href = "index.html";
-            return;
-        }
-
         try {
-            const resp = await fetch("https://empreenda-ja.onrender.com/api/frequencia/modelo", {
+            const resp = await fetch(`${API_URL}/api/frequencia/modelo`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -36,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const blob = await resp.blob();
             const url = window.URL.createObjectURL(blob);
-
             const a = document.createElement("a");
             a.href = url;
             a.download = "Planilha.xlsx";
@@ -51,13 +95,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Saudação personalizada
+// ==================== SAUDAÇÃO ====================
 (async () => {
     const payload = JSON.parse(atob(token.split(".")[1]));
     document.getElementById("bemvindo").innerText = `Bem-vindo(a), ${payload.nome}!`;
 })();
 
-// Upload de planilha
+// ==================== UPLOAD DE PLANILHA ====================
 document.getElementById("formUpload").addEventListener("submit", async (e) => {
     e.preventDefault();
     const arquivo = document.getElementById("arquivo").files[0];
@@ -70,7 +114,7 @@ document.getElementById("formUpload").addEventListener("submit", async (e) => {
         const resp = await fetch(`${API_URL}/api/frequencia/upload`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
-            body: formData
+            body: formData,
         });
 
         const dados = await resp.json();
@@ -78,7 +122,7 @@ document.getElementById("formUpload").addEventListener("submit", async (e) => {
             alert("✅ Enviado com sucesso!");
             carregarEnvios();
         } else {
-            alert("⚠️ " + (dados.erro || "Erro ao enviar arquivo"));
+            alert("⚠️ " + (dados.erro || "Erro ao enviar arquivo."));
         }
     } catch (erro) {
         console.error(erro);
@@ -86,7 +130,7 @@ document.getElementById("formUpload").addEventListener("submit", async (e) => {
     }
 });
 
-// Listar envios
+// ==================== LISTAR ENVIOS ====================
 async function carregarEnvios() {
     try {
         const resp = await fetch(`${API_URL}/api/minhas-frequencias`, {
@@ -105,8 +149,8 @@ async function carregarEnvios() {
             .map(
                 (f) => `
         <tr>
-            <td>${f.data}</td>
-            <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
+          <td>${f.data}</td>
+          <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
         </tr>`
             )
             .join("");

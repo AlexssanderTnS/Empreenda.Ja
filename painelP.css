@@ -3,7 +3,7 @@ body {
     background-color: #f5f6fa;
     color: #333;
     margin: 0;
-    background-image: url(/fundoProf.jpg) ;
+    background-image: url(/fundoProf.jpg);
 }
 
 .topbar {
@@ -67,7 +67,7 @@ table th {
     color: white;
 }
 
-#logout{
+#logout {
     background: #74b8fc;
     color: #333;
     padding: 0.6rem 1.2rem;
@@ -78,8 +78,66 @@ table th {
     font-weight: 700;
 }
 
-#logout:hover{
+#logout:hover {
     background: #0055aa;
     font-weight: 700;
     color: #f5f5f5;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal h2 {
+    margin-bottom: 0.5rem;
+}
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.modal button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

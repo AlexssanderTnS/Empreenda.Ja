@@ -106,6 +106,11 @@ async function seed() {
         ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. João", "joao", senhaProf, "professor"]
     );
+
+    await pool.query(`
+    ALTER TABLE professores ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
+`);
+
 }
 
 //registrar logs
@@ -144,6 +149,7 @@ app.get("/", (req, res) => {
 });
 
 // Login
+// Login
 app.post("/api/login", async (req, res) => {
     const { usuario, senha } = req.body;
     if (!usuario || !senha)
@@ -158,17 +164,26 @@ app.post("/api/login", async (req, res) => {
         if (!senhaOk) return res.status(401).json({ erro: "Senha incorreta" });
 
         const token = jwt.sign(
-            { id: user.id, tipo: user.tipo, nome: user.nome },
+            { id: user.id, tipo: user.tipo, nome: user.nome, precisaTrocar: user.precisa_trocar_senha },
             SECRET,
             { expiresIn: "8h" }
         );
 
-        res.json({ token, nome: user.nome, tipo: user.tipo });
+        res.json({
+            token,
+            nome: user.nome,
+            tipo: user.tipo,
+            precisaTrocar: user.precisa_trocar_senha // 👈 envia pro frontend
+        });
+
     } catch (e) {
         console.error(e);
         res.status(500).json({ erro: "Erro no login" });
     }
 });
+
+
+
 
 // ====== CONFIGURAÇÃO DO UPLOAD (MULTER) ======
 
@@ -201,6 +216,40 @@ const storage = multer.diskStorage({
     },
 });
 
+// ===== ALTERAR SENHA =====
+app.put("/api/alterar-senha", autenticar, async (req, res) => {
+    const { senhaAtual, novaSenha } = req.body;
+    if (!senhaAtual || !novaSenha) {
+        return res.status(400).json({ erro: "Preencha todos os campos." });
+    }
+
+    try {
+        // Busca o professor
+        const result = await dbQuery("SELECT * FROM professores WHERE id = $1", [req.user.id]);
+        const user = result[0];
+        if (!user) return res.status(404).json({ erro: "Usuário não encontrado." });
+
+        // Verifica senha atual
+        const senhaCorreta = bcrypt.compareSync(senhaAtual, user.senha);
+        if (!senhaCorreta) return res.status(401).json({ erro: "Senha atual incorreta." });
+
+        // Atualiza no banco + marca que não precisa mais trocar
+        const novaHash = bcrypt.hashSync(novaSenha, 10);
+        await dbQuery(`
+            UPDATE professores 
+            SET senha = $1, precisa_trocar_senha = FALSE 
+            WHERE id = $2
+        `, [novaHash, req.user.id]);
+
+        await registrarLog(req.user.id, "Alteração de senha");
+        res.json({ mensagem: "Senha alterada com sucesso." });
+    } catch (e) {
+        console.error("Erro ao alterar senha:", e);
+        res.status(500).json({ erro: "Erro ao alterar senha." });
+    }
+});
+
+
 
 const upload = multer({ storage });
 
@@ -213,6 +262,8 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
         res.status(404).json({ erro: "Modelo não encontrado no servidor." });
     }
 });
+
+
 
 // ====== ROTA 2: Upload da planilha preenchida ======
 app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {

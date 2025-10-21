@@ -286,12 +286,32 @@
       </div>
     `,
     config: `
-      <header class="topbar"><h2>⚙️ Configurações</h2></header>
-      <div class="fade"><p>Preferências e ajustes da conta do administrador.</p></div>
-    `,
+  <header class="topbar"><h2>⚙️ Configurações do Sistema</h2></header>
+  <div class="fade">
+    <section class="card mb-3">
+      <h4>🔐 Alterar Senha</h4>
+      <form id="formSenha">
+        <label>Senha atual:</label>
+        <input type="password" class="form-control mb-2" id="senhaAtual">
+        <label>Nova senha:</label>
+        <input type="password" class="form-control mb-2" id="novaSenha">
+        <label>Confirmar nova senha:</label>
+        <input type="password" class="form-control mb-3" id="confirmarSenha">
+        <button type="submit" class="btn btn-primary w-100">Atualizar senha</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h4>💾 Backup e Segurança</h4>
+      <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
+      <button id="btnBackup" class="btn btn-secondary">Fazer backup manual</button>
+    </section>
+  </div>
+`,
+
   };
 
-  // ==================== TROCA DE ABAS ====================
+   // ==================== TROCA DE ABAS ====================
   function ativarTrocaAbas() {
     navItems.forEach((item) => {
       item.addEventListener("click", async () => {
@@ -303,22 +323,85 @@
         if (secao === "professores") {
           conteudo.innerHTML = secoes.professores;
           await carregarProfessores();
+
         } else if (secao === "cadastro") {
           conteudo.innerHTML = secoes.cadastro;
           configurarFormularioCadastro();
+
         } else if (secao === "relatorios") {
           await carregarRelatorios();
-        } else {
+
+        } else if (secao === "config") {
+          conteudo.innerHTML = secoes.config;
+          configurarAlterarSenha(); // 👈 ativa o formulário de troca de senha
+        } 
+        else {
           conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
         }
       });
     });
   }
 
+  // ==================== ALTERAR SENHA ====================
+  function configurarAlterarSenha() {
+    const form = document.getElementById("formSenha");
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const senhaAtual = document.getElementById("senhaAtual").value.trim();
+      const novaSenha = document.getElementById("novaSenha").value.trim();
+      const confirmarSenha = document.getElementById("confirmarSenha").value.trim();
+
+      if (!senhaAtual || !novaSenha || !confirmarSenha) {
+        alert("Preencha todos os campos antes de continuar.");
+        return;
+      }
+      if (novaSenha !== confirmarSenha) {
+        alert("A nova senha e a confirmação não coincidem.");
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_URL}/api/alterar-senha`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ senhaAtual, novaSenha }),
+        });
+
+        const dados = await resp.json();
+        if (resp.ok) {
+          alert("✅ Senha alterada com sucesso!");
+          form.reset();
+        } else {
+          alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+        }
+      } catch (erro) {
+        console.error("Erro ao alterar senha:", erro);
+        alert("Erro de comunicação com o servidor.");
+      }
+    });
+  }
+
   // ==================== INICIALIZAÇÃO ====================
   ativarTrocaAbas();
-  
   conteudo.innerHTML = secoes.dashboard;
   carregarLogs();
+
+  // ==================== BOTÃO DE SAIR ====================
+  const btnLogout = document.getElementById("logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => {
+      const confirmar = confirm("Deseja realmente sair do sistema?");
+      if (confirmar) {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    });
+  }
 
 })();
