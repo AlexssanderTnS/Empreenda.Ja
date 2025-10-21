@@ -6,6 +6,8 @@
     return;
   }
 
+
+
   console.log("✅ Painel Master inicializado");
 
   // ==================== CONFIGURAÇÕES ====================
@@ -16,6 +18,12 @@
     window.location.href = "index.html";
     return;
   }
+
+
+  document.getElementById("logout").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "index.html";
+  });
 
   const conteudo = document.getElementById("conteudo");
   const navItems = document.querySelectorAll(".nav-links li");
@@ -39,21 +47,21 @@
     }
   }
 
- // ==================== RELATÓRIOS ====================
-async function carregarRelatorios() {
-  const tokenValido = await validarToken();
-  if (!tokenValido) return;
+  // ==================== RELATÓRIOS ====================
+  async function carregarRelatorios() {
+    const tokenValido = await validarToken();
+    if (!tokenValido) return;
 
-  try {
-    const resposta = await fetch(`${API_URL}/api/relatorios`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const dados = await resposta.json();
+    try {
+      const resposta = await fetch(`${API_URL}/api/relatorios`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dados = await resposta.json();
 
-    let linhas =
-      dados.length === 0
-        ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
-        : dados
+      let linhas =
+        dados.length === 0
+          ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
+          : dados
             .map(
               (l) => `
               <tr>
@@ -65,7 +73,7 @@ async function carregarRelatorios() {
             )
             .join("");
 
-    conteudo.innerHTML = `
+      conteudo.innerHTML = `
       <header class="topbar"><h2>📄 Relatórios de Envios</h2></header>
       <div class="fade">
         <table class="table table-striped table-bordered">
@@ -80,11 +88,11 @@ async function carregarRelatorios() {
           <tbody>${linhas}</tbody>
         </table>
       </div>`;
-  } catch (erro) {
-    conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
-    console.error("Erro ao carregar relatórios:", erro);
+    } catch (erro) {
+      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
+      console.error("Erro ao carregar relatórios:", erro);
+    }
   }
-}
 
 
   // ==================== LISTAR PROFESSORES ====================
