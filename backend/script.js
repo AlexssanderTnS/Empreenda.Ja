@@ -43,6 +43,9 @@ async function dbQuery(sql, params = []) {
     return result.rows;
 }
 
+
+
+
 // ====== SEED INICIAL ======
 async function seed() {
     const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
@@ -57,6 +60,18 @@ async function seed() {
         tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
     );
 `);
+
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS logs (
+        id SERIAL PRIMARY KEY,
+        professor_id INTEGER REFERENCES professores(id),
+        acao TEXT NOT NULL,
+        detalhe TEXT,
+        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`);
+
+
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS frequencias (
@@ -91,6 +106,19 @@ async function seed() {
         ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. João", "joao", senhaProf, "professor"]
     );
+}
+
+//registrar logs
+
+async function registrarLog(professorId, acao, detalhe = "") {
+    try {
+        await dbQuery(
+            `INSERT INTO logs (professor_id, acao, detalhe) VALUES ($1, $2, $3)`,
+            [professorId, acao, detalhe]
+        );
+    } catch (e) {
+        console.error("Erro ao registrar log:", e);
+    }
 }
 
 // ===== MIDDLEWARE DE AUTENTICAÇÃO =====
@@ -166,7 +194,7 @@ const storage = multer.diskStorage({
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
         const ano = agora.getFullYear();
 
-    
+
 
         const nomeArquivo = `Prof.${nomeProf}_${dia}_${mes}_${ano}${ext}`;
         cb(null, nomeArquivo);
@@ -195,6 +223,8 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
     try {
         const nomeArquivo = req.file.filename;
         const dataHoje = new Date().toISOString().split("T")[0];
+        await registrarLog(req.user.id, "Upload de frequência", req.file.filename);
+
 
         // Salva no banco: quem enviou, qual arquivo e a data
         await dbQuery(
@@ -208,7 +238,10 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
         console.error("Erro ao salvar upload:", erro);
         res.status(500).json({ erro: "Erro ao salvar frequência." });
     }
+
 });
+
+
 
 // ====== ROTA 3: Listar envios do professor ======
 app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
@@ -245,6 +278,8 @@ app.post("/api/professores", autenticar, async (req, res) => {
             [nome, usuario, hash]
         );
         res.json({ sucesso: true, mensagem: "Professor cadastrado com sucesso" });
+        await registrarLog(req.user.id, "Cadastro de professor", nome);
+
     } catch (e) {
         if (e.code === "23505") return res.status(400).json({ erro: "Usuário já existe" });
         console.error(e);
@@ -263,6 +298,8 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
     try {
         await dbQuery('DELETE FROM professores WHERE id = $1', [id]);
         res.json({ sucesso: true, mensagem: 'Professor excluído com sucesso.' });
+        await registrarLog(req.user.id, "Exclusão de professor", `ID ${id}`);
+
     } catch (e) {
         console.error('Erro ao excluir professor:', e);
         res.status(500).json({ erro: 'Erro ao excluir professor.' });
@@ -325,6 +362,28 @@ app.get("/api/relatorios", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro ao gerar relatório" });
     }
 });
+
+app.get("/api/logs/recentes", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") {
+        return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    try {
+        const linhas = await dbQuery(`
+            SELECT l.id, l.acao, l.detalhe, l.data_hora, p.nome AS professor_nome
+            FROM logs l
+            LEFT JOIN professores p ON p.id = l.professor_id
+            ORDER BY l.data_hora DESC
+            LIMIT 10
+        `);
+        res.json(linhas);
+    } catch (e) {
+        console.error("Erro ao carregar logs:", e);
+        res.status(500).json({ erro: "Erro ao carregar ações recentes" });
+    }
+});
+
+
 
 // Backup (opcional — aqui apenas loga)
 cron.schedule("0 2 * * *", () => {

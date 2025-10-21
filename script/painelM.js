@@ -39,21 +39,21 @@
     }
   }
 
- // ==================== RELATÓRIOS ====================
-async function carregarRelatorios() {
-  const tokenValido = await validarToken();
-  if (!tokenValido) return;
+  // ==================== RELATÓRIOS ====================
+  async function carregarRelatorios() {
+    const tokenValido = await validarToken();
+    if (!tokenValido) return;
 
-  try {
-    const resposta = await fetch(`${API_URL}/api/relatorios`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const dados = await resposta.json();
+    try {
+      const resposta = await fetch(`${API_URL}/api/relatorios`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dados = await resposta.json();
 
-    let linhas =
-      dados.length === 0
-        ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
-        : dados
+      let linhas =
+        dados.length === 0
+          ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
+          : dados
             .map(
               (l) => `
               <tr>
@@ -65,7 +65,7 @@ async function carregarRelatorios() {
             )
             .join("");
 
-    conteudo.innerHTML = `
+      conteudo.innerHTML = `
       <header class="topbar"><h2>📄 Relatórios de Envios</h2></header>
       <div class="fade">
         <table class="table table-striped table-bordered">
@@ -80,11 +80,11 @@ async function carregarRelatorios() {
           <tbody>${linhas}</tbody>
         </table>
       </div>`;
-  } catch (erro) {
-    conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
-    console.error("Erro ao carregar relatórios:", erro);
+    } catch (erro) {
+      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
+      console.error("Erro ao carregar relatórios:", erro);
+    }
   }
-}
 
 
   // ==================== LISTAR PROFESSORES ====================
@@ -193,19 +193,52 @@ async function carregarRelatorios() {
     });
   }
 
+  async function carregarLogs() {
+    try {
+      const resp = await fetch(`${API_URL}/api/logs/recentes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dados = await resp.json();
+      const tbody = document.querySelector("#tabelaLogs tbody");
+
+      if (!resp.ok || dados.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>Nenhuma ação recente.</td></tr>";
+        return;
+      }
+
+      tbody.innerHTML = dados
+        .map(
+          (log) => `
+        <tr>
+          <td>${new Date(log.data_hora).toLocaleString("pt-BR")}</td>
+          <td>${log.professor_nome || "—"}</td>
+          <td>${log.acao}</td>
+          <td>${log.detalhe || "—"}</td>
+        </tr>`
+        )
+        .join("");
+    } catch (erro) {
+      console.error("Erro ao carregar logs:", erro);
+    }
+  }
+
+
+
   // ==================== SEÇÕES ====================
   const secoes = {
     dashboard: `
       <header class="topbar"><h2>📊 Painel de Controle</h2></header>
-      <div class="fade">
-        <p>Bem-vindo ao painel administrativo do Empreenda Já.</p>
-        <div class="cards-container">
-          <div class="card"><h4>Professores</h4><h2>--</h2></div>
-          <div class="card"><h4>Frequências</h4><h2>--</h2></div>
-          <div class="card"><h4>Último Backup</h4><h2>--</h2></div>
+        <div class="fade">
+          <h4>📅 Ações Recentes</h4>
+          <table class="table table-striped" id="tabelaLogs">
+            <thead>
+              <tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr>
+            </thead>
+            <tbody><tr><td colspan="4">Carregando...</td></tr></tbody>
+          </table>
         </div>
-      </div>
-    `,
+`,
+
     relatorios: `
       <header class="topbar"><h2>📄 Relatórios</h2></header>
       <div class="fade"><p>Carregando relatórios...</p></div>
@@ -284,5 +317,8 @@ async function carregarRelatorios() {
 
   // ==================== INICIALIZAÇÃO ====================
   ativarTrocaAbas();
+  
   conteudo.innerHTML = secoes.dashboard;
+  carregarLogs();
+
 })();
