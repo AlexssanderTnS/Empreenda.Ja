@@ -304,7 +304,7 @@
     <section class="card">
       <h4>💾 Backup e Segurança</h4>
       <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
-      <button id="btnBackup" class="btn btn-secondary">Fazer backup manual</button>
+      <button id="btnBackup" class="btn">Baixar backup mais recente</button>
     </section>
   </div>
 `,
@@ -403,5 +403,20 @@
       }
     });
   }
+
+document.getElementById("btnBackup").addEventListener("click", async () => {
+    const token = localStorage.getItem("token");
+    const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!resp.ok) return alert("Erro ao baixar backup");
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Backup.zip";
+    a.click();
+    a.remove();
+});
 
 })();

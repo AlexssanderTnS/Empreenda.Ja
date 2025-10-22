@@ -9,6 +9,7 @@ import cron from "node-cron";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import archiver from "archiver";
 
 
 const app = express();
@@ -435,15 +436,67 @@ app.get("/api/logs/recentes", autenticar, async (req, res) => {
 });
 
 
+const backupDir = path.resolve("./backups");
+const uploadsDir = path.resolve("./uploads/frequencias");
 
-// Backup (opcional — aqui apenas loga)
-cron.schedule("0 2 * * *", () => {
-    console.log("[backup] Tarefa agendada — em PostgreSQL você pode usar dumps automáticos.");
+if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+async function gerarBackupZip() {
+    const agora = new Date();
+    const dataFormatada = agora.toISOString().replace(/[:.]/g, "-");
+    const nomeArquivo = `backup_${dataFormatada}.zip`;
+    const caminhoFinal = path.join(backupDir, nomeArquivo);
+
+    return new Promise((resolve, reject) => {
+        const output = fs.createWriteStream(caminhoFinal);
+        const archive = archiver("zip", { zlib: { level: 9 } });
+
+        output.on("close", () => {
+            console.log(`[Backup] Gerado: ${nomeArquivo} (${archive.pointer()} bytes)`);
+            resolve(caminhoFinal);
+        });
+
+        archive.on("error", (err) => reject(err));
+
+        archive.pipe(output);
+
+        // Adiciona toda a pasta de frequências
+        archive.directory(uploadsDir, false);
+
+        archive.finalize();
+    });
+}
+
+// ===== CRON — A CADA 25 HORAS =====
+cron.schedule("0 */25 * * *", async () => {
+    console.log("[Backup] Gerando ZIP automático...");
+    try {
+        await gerarBackupZip();
+    } catch (err) {
+        console.error("[Backup] Erro ao gerar ZIP:", err);
+    }
 });
 
-// ===== INICIAR SERVIDOR =====
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    await seed();
-    console.log(`Servidor rodando na porta ${PORT}`);
+// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP =====
+app.get("/api/backup/download", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") return res.status(403).json({ erro: "Acesso negado" });
+
+    try {
+        const arquivos = fs.readdirSync(backupDir)
+            .filter(f => f.endsWith(".zip"))
+            .sort((a, b) => fs.statSync(path.join(backupDir, b)).mtime - fs.statSync(path.join(backupDir, a)).mtime);
+
+        if (arquivos.length === 0) {
+            return res.status(404).json({ erro: "Nenhum backup encontrado." });
+        }
+
+        const maisRecente = arquivos[0];
+        const caminho = path.join(backupDir, maisRecente);
+        console.log(`[Backup] Download manual: ${maisRecente}`);
+        res.download(caminho);
+    } catch (err) {
+        console.error("[Backup] Erro ao baixar:", err);
+        res.status(500).json({ erro: "Erro ao preparar download." });
+    }
 });
