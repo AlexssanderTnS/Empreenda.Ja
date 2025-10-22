@@ -37,13 +37,16 @@ if (form) {
             });
 
             const dados = await resposta.json();
+            localStorage.setItem("token", dados.token);
+            localStorage.setItem("precisaTrocar", dados.precisaTrocar ? "true" : "false");
+
 
             if (!resposta.ok) {
                 alert(dados.erro || "Usuário ou senha incorretos");
                 return;
             }
             localStorage.setItem("token", dados.token);
-            
+
             // Redirecionamento
             if (dados.tipo === "master") {
                 window.location.href = "/painel-master.html";
