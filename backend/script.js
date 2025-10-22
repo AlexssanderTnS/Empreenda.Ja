@@ -500,3 +500,9 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro ao preparar download." });
     }
 });
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, "0.0.0.0", async () => {
+    await seed();
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
