@@ -54,120 +54,121 @@ async function seed() {
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS professores (
-        id SERIAL PRIMARY KEY,
-        nome TEXT NOT NULL,
-        usuario TEXT UNIQUE NOT NULL,
-        senha TEXT NOT NULL,
-        tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
+      id SERIAL PRIMARY KEY,
+      nome TEXT NOT NULL,
+      usuario TEXT UNIQUE NOT NULL,
+      senha TEXT NOT NULL,
+      tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
     );
-`);
+  `);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS logs (
-        id SERIAL PRIMARY KEY,
-        professor_id INTEGER REFERENCES professores(id),
-        acao TEXT NOT NULL,
-        detalhe TEXT,
-        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-`);
-
-
+      id SERIAL PRIMARY KEY,
+      professor_id INTEGER REFERENCES professores(id),
+      acao TEXT NOT NULL,
+      detalhe TEXT,
+      data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS frequencias (
-        id SERIAL PRIMARY KEY,
-        professor_id INTEGER NOT NULL,
-        curso TEXT NOT NULL,
-        local TEXT NOT NULL,
-        turma TEXT NOT NULL,
-        data TEXT NOT NULL,
-        alunos TEXT NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      professor_id INTEGER NOT NULL,
+      curso TEXT NOT NULL,
+      local TEXT NOT NULL,
+      turma TEXT NOT NULL,
+      data TEXT NOT NULL,
+      alunos TEXT NOT NULL,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-`);
+  `);
 
+    await pool.query(`
+    ALTER TABLE professores 
+    ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
+  `);
+
+    // ===== INSERÇÃO DE USUÁRIOS PADRÃO =====
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (usuario) DO NOTHING`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
         ["Administrador", "master", senhaMaster, "master"]
     );
 
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (usuario) DO NOTHING`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. Maria", "maria", senhaProf, "professor"]
     );
 
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (usuario) DO NOTHING`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
         ["Prof. João", "joao", senhaProf, "professor"]
     );
 
-    await pool.query(`
-    ALTER TABLE professores ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
-`);
-
     // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
-        // Permite NULL em professor_id
         await pool.query(`
-    ALTER TABLE frequencias
-    ALTER COLUMN professor_id DROP NOT NULL;
-  `);
-
-        // Remove chave estrangeira antiga (caso exista)
-        await pool.query(`
-    ALTER TABLE frequencias
-    DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;
+      ALTER TABLE frequencias
+      ALTER COLUMN professor_id DROP NOT NULL;
     `);
+
+        // Remove TODAS as foreign keys antigas
+        const oldConstraints = await pool.query(`
+      SELECT constraint_name
+      FROM information_schema.table_constraints
+      WHERE table_name = 'frequencias'
+      AND constraint_type = 'FOREIGN KEY';
+    `);
+
+        for (const c of oldConstraints.rows) {
+            await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS ${c.constraint_name};`);
+        }
 
         // Cria nova relação SEM apagar frequências
         await pool.query(`
-    ALTER TABLE frequencias
-    ADD CONSTRAINT frequencias_professor_id_fkey
-    FOREIGN KEY (professor_id)
-    REFERENCES professores(id)
-    ON DELETE SET NULL;
+      ALTER TABLE frequencias
+      ADD CONSTRAINT frequencias_professor_id_fkey
+      FOREIGN KEY (professor_id)
+      REFERENCES professores(id)
+      ON DELETE SET NULL;
     `);
 
-        console.log("🧩 Relação professor-frequências ajustada (ON DELETE SET NULL).");
+        console.log("🧩 Relação professor-frequências garantida (ON DELETE SET NULL).");
     } catch (err) {
-        console.error("⚠️ Erro ao ajustar relação:", err);
-    }// ===== AJUSTE DE RELAÇÃO PROFESSORES → LOGS =====
+        console.error("⚠️ Erro ao ajustar relação frequencias-professores:", err);
+    }
+
+    // ===== AJUSTE DE RELAÇÃO PROFESSORES → LOGS =====
     try {
-        // Permite NULL em professor_id
         await pool.query(`
-    ALTER TABLE logs
-    ALTER COLUMN professor_id DROP NOT NULL;
-  `);
+        ALTER TABLE logs
+            ALTER COLUMN professor_id DROP NOT NULL;
+    `);
 
-        // Remove chave estrangeira antiga
         await pool.query(`
-    ALTER TABLE logs
-    DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;
-  `);
+        ALTER TABLE logs
+            DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;
+    `);
 
-        // Cria nova relação SEM apagar logs
         await pool.query(`
-    ALTER TABLE logs
-    ADD CONSTRAINT logs_professor_id_fkey
-    FOREIGN KEY (professor_id)
-    REFERENCES professores(id)
-    ON DELETE SET NULL;
-  `);
+        ALTER TABLE logs
+            ADD CONSTRAINT logs_professor_id_fkey
+            FOREIGN KEY (professor_id)
+            REFERENCES professores(id)
+            ON DELETE SET NULL;
+    `);
 
         console.log("🧩 Relação professor-logs ajustada (ON DELETE SET NULL).");
     } catch (err) {
         console.error("⚠️ Erro ao ajustar logs-professores:", err);
     }
-
-
-
 }
 
 //registrar logs
