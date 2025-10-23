@@ -667,3 +667,41 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro interno ao preparar backup." });
     }
 });
+
+// ===== ROTA PARA BACKUP GERAL (TODOS OS RELATÓRIOS) =====
+app.get("/api/backup/geral", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") {
+        return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    try {
+        const nomeZip = `backup_geral_todos_relatorios_${new Date().toISOString().split("T")[0]}.zip`;
+        const caminhoZip = path.join(backupDir, nomeZip);
+
+        console.log(`[Backup geral] Criando arquivo com todos os relatórios...`);
+
+        // Cria o ZIP com tudo dentro da pasta uploads/frequencias/
+        const output = fs.createWriteStream(caminhoZip);
+        const archive = archiver("zip", { zlib: { level: 9 } });
+        archive.pipe(output);
+
+        archive.directory(uploadsDir, false); // 👈 adiciona todos os arquivos existentes
+        archive.finalize();
+
+        output.on("close", async () => {
+            console.log(`[Backup geral] ZIP gerado: ${nomeZip} (${archive.pointer()} bytes)`);
+            await registrarLog(req.user.id, "Backup geral completo", nomeZip);
+            res.download(caminhoZip, nomeZip, (err) => {
+                if (err) console.error("[Backup geral] Erro ao enviar:", err);
+            });
+        });
+
+        archive.on("error", (err) => {
+            console.error("[Backup geral] Erro ao criar ZIP:", err);
+            res.status(500).json({ erro: "Erro ao criar backup geral." });
+        });
+    } catch (err) {
+        console.error("[Backup geral] Erro inesperado:", err);
+        res.status(500).json({ erro: "Erro interno ao gerar backup geral." });
+    }
+});

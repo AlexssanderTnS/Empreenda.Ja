@@ -305,10 +305,11 @@
       <h4>💾 Backup e Segurança</h4>
       <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button id="btnBackupTodos" class="btn">Baixar último backup completo</button>
-        <button id="btnBackupHoje" class="btn">Baixar backup diário (arquivos de hoje)</button>
+        <button id="btnBackupGeral" class="btn">📦 Baixar backup geral (todos os relatórios)</button>
+        <button id="btnBackup" class="btn">🧭 Baixar último backup completo</button>
+        <button id="btnBackupHoje" class="btn">📅 Baixar backup diário (arquivos de hoje)</button>
       </div>
-</section>
+    </section>
   </div>
 `,
 
@@ -392,94 +393,92 @@
   }
 
   // ==================== BACKUP E SEGURANÇA ====================
-function configurarBotoesBackup() {
-  console.log("🧩 Configurando botões de backup...");
+  function configurarBotoesBackup() {
+    console.log("🧩 Configurando botões de backup...");
 
-  const btnBackup = document.getElementById("btnBackup");
-  const btnBackupHoje = document.getElementById("btnBackupHoje");
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    const btnBackupGeral = document.getElementById("btnBackupGeral");
+    const btnBackup = document.getElementById("btnBackup");
+    const btnBackupHoje = document.getElementById("btnBackupHoje");
 
-  if (!btnBackup && !btnBackupHoje) {
-    console.warn("⚠️ Botões de backup ainda não renderizados no DOM.");
-    return;
-  }
+    if (!btnBackupGeral && !btnBackup && !btnBackupHoje) {
+      console.warn("⚠️ Botões de backup ainda não renderizados no DOM.");
+      return;
+    }
 
-  // --- BACKUP COMPLETO ---
-  if (btnBackup) {
-    btnBackup.addEventListener("click", async () => {
-      console.log("📦 Gerando backup completo...");
-      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
-        headers: { Authorization: `Bearer ${token}` },
+    // --- BACKUP GERAL ---
+    if (btnBackupGeral) {
+      btnBackupGeral.addEventListener("click", async () => {
+        console.log("📦 Gerando backup geral (todos os relatórios)...");
+        const resp = await fetch(`${API_URL}/api/backup/geral`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!resp.ok) {
+          const msg = await resp.text();
+          alert("Erro ao gerar backup geral: " + msg);
+          return;
+        }
+
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Backup_Geral_Todos.zip";
+        a.click();
+        a.remove();
       });
+    }
 
-      if (!resp.ok) {
-        const msg = await resp.text();
-        alert("Erro ao baixar backup completo: " + msg);
-        return;
-      }
+    // --- BACKUP COMPLETO ---
+    if (btnBackup) {
+      btnBackup.addEventListener("click", async () => {
+        console.log("🧭 Baixando último backup completo...");
+        const resp = await fetch(`${API_URL}/api/backup/download`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Backup_Completo.zip";
-      a.click();
-      a.remove();
-    });
+        if (!resp.ok) {
+          const msg = await resp.text();
+          alert("Erro ao baixar backup completo: " + msg);
+          return;
+        }
 
-      // --- BACKUP TODOS OS RELATÓRIOS ---
-  const btnBackupTodos = document.getElementById("btnBackupTodos");
-  if (btnBackupTodos) {
-    btnBackupTodos.addEventListener("click", async () => {
-      console.log("Gerando backup completo de todos os relatórios...");
-      const token = localStorage.getItem("token");
-
-      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/todos", {
-        headers: { Authorization: `Bearer ${token}` },
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Backup_Completo.zip";
+        a.click();
+        a.remove();
       });
+    }
 
-      if (!resp.ok) {
-        const msg = await resp.text();
-        alert("Erro ao baixar todos os relatórios: " + msg);
-        return;
-      }
+    // --- BACKUP DIÁRIO ---
+    if (btnBackupHoje) {
+      btnBackupHoje.addEventListener("click", async () => {
+        console.log("📅 Baixando backup diário...");
+        const resp = await fetch(`${API_URL}/api/backup/hoje`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Backup_Todos_Relatorios.zip";
-      a.click();
-      a.remove();
-    });
-  }
+        if (!resp.ok) {
+          const msg = await resp.text();
+          alert("Erro ao baixar backup diário: " + msg);
+          return;
+        }
 
-  }
-
-  // --- BACKUP DIÁRIO ---
-  if (btnBackupHoje) {
-    btnBackupHoje.addEventListener("click", async () => {
-      console.log("📅 Gerando backup diário...");
-      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/hoje", {
-        headers: { Authorization: `Bearer ${token}` },
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Backup_Diario.zip";
+        a.click();
+        a.remove();
       });
-
-      if (!resp.ok) {
-        const msg = await resp.text();
-        alert("Erro ao baixar backup diário: " + msg);
-        return;
-      }
-
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Backup_Diario.zip";
-      a.click();
-      a.remove();
-    });
+    }
   }
-}
+
 
 
   // ==================== INICIALIZAÇÃO ====================
@@ -563,6 +562,6 @@ function configurarBotoesBackup() {
     }
   });
 
-  
-  
+
+
 })();
