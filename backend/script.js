@@ -138,7 +138,34 @@ async function seed() {
         console.log("🧩 Relação professor-frequências ajustada (ON DELETE SET NULL).");
     } catch (err) {
         console.error("⚠️ Erro ao ajustar relação:", err);
+    }// ===== AJUSTE DE RELAÇÃO PROFESSORES → LOGS =====
+    try {
+        // Permite NULL em professor_id
+        await pool.query(`
+    ALTER TABLE logs
+    ALTER COLUMN professor_id DROP NOT NULL;
+  `);
+
+        // Remove chave estrangeira antiga
+        await pool.query(`
+    ALTER TABLE logs
+    DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;
+  `);
+
+        // Cria nova relação SEM apagar logs
+        await pool.query(`
+    ALTER TABLE logs
+    ADD CONSTRAINT logs_professor_id_fkey
+    FOREIGN KEY (professor_id)
+    REFERENCES professores(id)
+    ON DELETE SET NULL;
+  `);
+
+        console.log("🧩 Relação professor-logs ajustada (ON DELETE SET NULL).");
+    } catch (err) {
+        console.error("⚠️ Erro ao ajustar logs-professores:", err);
     }
+
 
 
 }
