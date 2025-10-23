@@ -189,9 +189,3 @@ async function carregarEnvios() {
 
 }
 
-window.alert = (msg) => {
-  const modal = document.getElementById("modalAlerta");
-  const texto = document.getElementById("modalMensagem");
-  modal.style.display = "flex";
-  texto.textContent = msg;
-};
