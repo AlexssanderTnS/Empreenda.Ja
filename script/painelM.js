@@ -407,64 +407,53 @@
     });
   }
 
-  document.getElementById("btnBackup").addEventListener("click", async () => {
+  // ==================== BOTÕES DE BACKUP ====================
+  // Espera o DOM carregar completamente antes de buscar os botões
+  window.addEventListener("load", () => {
     const token = localStorage.getItem("token");
-    const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!resp.ok) return alert("Erro ao baixar backup");
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Backup.zip";
-    a.click();
-    a.remove();
-  });
-  // ===== NOVO BOTÃO: BACKUP DIÁRIO (apenas arquivos do dia) =====
-  const btnBackupHoje = document.getElementById("btnBackupHoje");
-  if (btnBackupHoje) {
-    btnBackupHoje.addEventListener("click", async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const resp = await fetch(`${API_URL}/api/backup/hoje`, {
+
+    // Botão: Backup completo
+    const btnBackup = document.getElementById("btnBackup");
+    if (btnBackup) {
+      btnBackup.addEventListener("click", async () => {
+        const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        if (resp.status === 404) {
-          alert("⚠️ Nenhum arquivo gerado hoje.");
-          return;
-        }
-
         if (!resp.ok) {
-          alert("❌ Erro ao gerar backup diário.");
+          alert("⚠️ Erro ao baixar backup completo.");
           return;
         }
-
-        // ↓↓↓ importante ↓↓↓
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-
-        const hoje = new Date();
-        const dia = String(hoje.getDate()).padStart(2, "0");
-        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-        const ano = hoje.getFullYear();
-
-        a.download = `backup_diario_${ano}-${mes}-${dia}.zip`;
-        document.body.appendChild(a);
+        a.download = "Backup_Completo.zip";
         a.click();
         a.remove();
-        URL.revokeObjectURL(url);
-      } catch (erro) {
-        console.error("Erro ao baixar backup diário:", erro);
-        alert("Erro ao baixar backup diário.");
-      }
-    });
-  }
+      });
+    }
 
-
+    // Botão: Backup diário
+    const btnBackupHoje = document.getElementById("btnBackupHoje");
+    if (btnBackupHoje) {
+      btnBackupHoje.addEventListener("click", async () => {
+        const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/hoje", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!resp.ok) {
+          alert("⚠️ Erro ao baixar backup diário.");
+          return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Backup_Diario.zip";
+        a.click();
+        a.remove();
+      });
+    }
+  });
 
 
 })();
