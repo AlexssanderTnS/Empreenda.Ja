@@ -98,22 +98,7 @@ async function seed() {
         ["Administrador", "master", senhaMaster, "master"]
     );
 
-    await pool.query(
-        `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
-        ["Prof. Maria", "maria", senhaProf, "professor"]
-    );
 
-    await pool.query(
-        `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
-        ["Prof. João", "joao", senhaProf, "professor"]
-    );
-
-
-    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
         // Permite NULL em professor_id

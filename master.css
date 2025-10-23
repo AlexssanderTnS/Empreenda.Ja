@@ -143,9 +143,11 @@ button {
     padding:10px ;
     background-color: #007bff;
     color: white;
+    border: 1px solid #333;
 }
 
 button:hover {
     background-color: #0056b3;
     font-weight: 700 ;
+    font-size: 13px;
 }
