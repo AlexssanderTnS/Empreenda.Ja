@@ -112,20 +112,30 @@ async function seed() {
         ["Prof. João", "joao", senhaProf, "professor"]
     );
 
+
     // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
+        // Permite NULL em professor_id
         await pool.query(`
-      ALTER TABLE frequencias
-      ALTER COLUMN professor_id DROP NOT NULL;
-    `);
+    ALTER TABLE frequencias
+    ALTER COLUMN professor_id DROP NOT NULL;
+  `);
+
+        // Limpa registros órfãos (frequencias sem professor válido)
+        await pool.query(`
+    UPDATE frequencias
+    SET professor_id = NULL
+    WHERE professor_id IS NOT NULL
+    AND professor_id NOT IN (SELECT id FROM professores);
+  `);
 
         // Remove TODAS as foreign keys antigas
         const oldConstraints = await pool.query(`
-      SELECT constraint_name
-      FROM information_schema.table_constraints
-      WHERE table_name = 'frequencias'
-      AND constraint_type = 'FOREIGN KEY';
-    `);
+    SELECT constraint_name
+    FROM information_schema.table_constraints
+    WHERE table_name = 'frequencias'
+    AND constraint_type = 'FOREIGN KEY';
+  `);
 
         for (const c of oldConstraints.rows) {
             await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS ${c.constraint_name};`);
@@ -133,14 +143,14 @@ async function seed() {
 
         // Cria nova relação SEM apagar frequências
         await pool.query(`
-      ALTER TABLE frequencias
-      ADD CONSTRAINT frequencias_professor_id_fkey
-      FOREIGN KEY (professor_id)
-      REFERENCES professores(id)
-      ON DELETE SET NULL;
-    `);
+    ALTER TABLE frequencias
+    ADD CONSTRAINT frequencias_professor_id_fkey
+    FOREIGN KEY (professor_id)
+    REFERENCES professores(id)
+    ON DELETE SET NULL;
+  `);
 
-        console.log("🧩 Relação professor-frequências garantida (ON DELETE SET NULL).");
+        console.log("🧩 Relação professor-frequências corrigida e garantida (ON DELETE SET NULL).");
     } catch (err) {
         console.error("⚠️ Erro ao ajustar relação frequencias-professores:", err);
     }
