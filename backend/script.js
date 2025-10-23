@@ -149,7 +149,7 @@ app.get("/", (req, res) => {
     res.send("API Empreenda Presença OK (PostgreSQL)");
 });
 
-// Login
+
 // Login
 app.post("/api/login", async (req, res) => {
     const { usuario, senha } = req.body;
@@ -505,4 +505,60 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
     await seed();
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
+
+// ===== ROTA PARA BACKUP DIÁRIO (somente master) =====
+app.get("/api/backup/hoje", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") {
+        return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    try {
+        const hoje = new Date();
+        const dia = String(hoje.getDate()).padStart(2, "0");
+        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+        const ano = hoje.getFullYear();
+        const dataHoje = `${ano}-${mes}-${dia}`; // yyyy-mm-dd
+
+        const arquivos = fs.readdirSync(uploadsDir)
+            .filter(arquivo => {
+                const caminho = path.join(uploadsDir, arquivo);
+                const stats = fs.statSync(caminho);
+                const dataArquivo = stats.mtime.toISOString().split("T")[0];
+                return dataArquivo === dataHoje;
+            });
+
+        if (arquivos.length === 0) {
+            return res.status(404).json({ erro: "Nenhum arquivo gerado hoje." });
+        }
+
+        const nomeZip = `backup_diario_${ano}-${mes}-${dia}.zip`;
+        const caminhoZip = path.join(backupDir, nomeZip);
+
+        const output = fs.createWriteStream(caminhoZip);
+        const archive = archiver("zip", { zlib: { level: 9 } });
+
+        archive.pipe(output);
+
+        for (const arquivo of arquivos) {
+            archive.file(path.join(uploadsDir, arquivo), { name: arquivo });
+        }
+
+        archive.finalize();
+
+        output.on("close", async () => {
+            console.log(`[Backup manual diário] Gerado: ${nomeZip}`);
+            await registrarLog(req.user.id, "Backup manual diário", nomeZip);
+            res.download(caminhoZip);
+        });
+
+        archive.on("error", (err) => {
+            console.error("Erro ao criar ZIP manual diário:", err);
+            res.status(500).json({ erro: "Erro ao criar o backup diário." });
+        });
+
+    } catch (err) {
+        console.error("[Backup manual diário] Erro geral:", err);
+        res.status(500).json({ erro: "Erro interno ao gerar backup diário." });
+    }
 });

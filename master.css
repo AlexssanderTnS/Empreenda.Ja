@@ -83,7 +83,7 @@ body {
     transition: opacity 0.3s;
 }
 
-.cards-container{
+.cards-container {
     padding: 10px;
 }
 
@@ -137,4 +137,13 @@ thead {
 .fade {
     margin-top: 1.2rem;
     animation: fadeIn 0.4s ease;
+}
+
+#btnBackupHoje {
+    background-color: #007bff;
+    color: white;
+}
+
+#btnBackupHoje:hover {
+    background-color: #0056b3;
 }
