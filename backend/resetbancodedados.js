@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: "postgresql://empreenda_postgress_user:Lihe2vf3Qot33OO6ALWBNhoD0o0YXQPh@dpg-d3ogike3jp1c73bvo660-a/empreenda_postgress",
     ssl: { rejectUnauthorized: false },
 });
 
