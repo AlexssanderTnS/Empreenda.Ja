@@ -479,6 +479,34 @@
       });
     }
   }
+  // --- RESETAR BANCO DE DADOS ---
+  const btnResetBanco = document.getElementById("btnResetBanco");
+  if (btnResetBanco) {
+    btnResetBanco.addEventListener("click", async () => {
+      const confirmar = confirm("⚠️ Isso vai APAGAR todos os dados e reiniciar o sistema. Deseja continuar?");
+      if (!confirmar) return;
+
+      try {
+        const resp = await fetch(`${API_URL}/api/resetar-banco`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const dados = await resp.json();
+        if (resp.ok) {
+          alert("✅ " + dados.mensagem);
+          localStorage.removeItem("token");
+          window.location.href = "index.html"; // força relogar como master
+        } else {
+          alert("⚠️ " + (dados.erro || "Erro ao resetar banco."));
+        }
+      } catch (erro) {
+        console.error("Erro ao resetar banco:", erro);
+        alert("Erro de comunicação com o servidor.");
+      }
+    });
+  }
+
 
 
 
@@ -564,33 +592,6 @@
   });
 
 
-  // --- RESETAR BANCO DE DADOS ---
-const btnResetBanco = document.getElementById("btnResetBanco");
-if (btnResetBanco) {
-  btnResetBanco.addEventListener("click", async () => {
-    const confirmar = confirm("⚠️ Isso vai APAGAR todos os dados e reiniciar o sistema. Deseja continuar?");
-    if (!confirmar) return;
-
-    try {
-      const resp = await fetch(`${API_URL}/api/resetar-banco`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const dados = await resp.json();
-      if (resp.ok) {
-        alert("✅ " + dados.mensagem);
-        localStorage.removeItem("token");
-        window.location.href = "index.html"; // força relogar como master
-      } else {
-        alert("⚠️ " + (dados.erro || "Erro ao resetar banco."));
-      }
-    } catch (erro) {
-      console.error("Erro ao resetar banco:", erro);
-      alert("Erro de comunicação com o servidor.");
-    }
-  });
-}
 
 
 })();
