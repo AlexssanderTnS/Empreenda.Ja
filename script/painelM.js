@@ -441,6 +441,7 @@
           return;
         }
 
+        // ↓↓↓ importante ↓↓↓
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -452,6 +453,7 @@
         const ano = hoje.getFullYear();
 
         a.download = `backup_diario_${ano}-${mes}-${dia}.zip`;
+        document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
@@ -461,6 +463,8 @@
       }
     });
   }
+
+
 
 
 })();

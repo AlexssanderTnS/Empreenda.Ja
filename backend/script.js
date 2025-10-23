@@ -507,7 +507,6 @@ app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
-// ===== ROTA PARA BACKUP DIÁRIO (somente master) =====
 app.get("/api/backup/hoje", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -518,15 +517,14 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
         const dia = String(hoje.getDate()).padStart(2, "0");
         const mes = String(hoje.getMonth() + 1).padStart(2, "0");
         const ano = hoje.getFullYear();
-        const dataHoje = `${ano}-${mes}-${dia}`; // yyyy-mm-dd
+        const dataHoje = `${ano}-${mes}-${dia}`;
 
-        const arquivos = fs.readdirSync(uploadsDir)
-            .filter(arquivo => {
-                const caminho = path.join(uploadsDir, arquivo);
-                const stats = fs.statSync(caminho);
-                const dataArquivo = stats.mtime.toISOString().split("T")[0];
-                return dataArquivo === dataHoje;
-            });
+        const arquivos = fs.readdirSync(uploadsDir).filter(arquivo => {
+            const caminho = path.join(uploadsDir, arquivo);
+            const stats = fs.statSync(caminho);
+            const dataArquivo = stats.mtime.toISOString().split("T")[0];
+            return dataArquivo === dataHoje;
+        });
 
         if (arquivos.length === 0) {
             return res.status(404).json({ erro: "Nenhum arquivo gerado hoje." });
@@ -537,13 +535,10 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
 
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
-
         archive.pipe(output);
-
         for (const arquivo of arquivos) {
             archive.file(path.join(uploadsDir, arquivo), { name: arquivo });
         }
-
         archive.finalize();
 
         output.on("close", async () => {
@@ -551,12 +546,6 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
             await registrarLog(req.user.id, "Backup manual diário", nomeZip);
             res.download(caminhoZip);
         });
-
-        archive.on("error", (err) => {
-            console.error("Erro ao criar ZIP manual diário:", err);
-            res.status(500).json({ erro: "Erro ao criar o backup diário." });
-        });
-
     } catch (err) {
         console.error("[Backup manual diário] Erro geral:", err);
         res.status(500).json({ erro: "Erro interno ao gerar backup diário." });
