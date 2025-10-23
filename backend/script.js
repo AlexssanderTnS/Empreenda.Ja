@@ -550,27 +550,6 @@ cron.schedule("0 */25 * * *", async () => {
 });
 
 // ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP =====
-app.get("/api/backup/download", autenticar, async (req, res) => {
-    if (req.user.tipo !== "master") return res.status(403).json({ erro: "Acesso negado" });
-
-    try {
-        const arquivos = fs.readdirSync(backupDir)
-            .filter(f => f.endsWith(".zip"))
-            .sort((a, b) => fs.statSync(path.join(backupDir, b)).mtime - fs.statSync(path.join(backupDir, a)).mtime);
-
-        if (arquivos.length === 0) {
-            return res.status(404).json({ erro: "Nenhum backup encontrado." });
-        }
-
-        const maisRecente = arquivos[0];
-        const caminho = path.join(backupDir, maisRecente);
-        console.log(`[Backup] Download manual: ${maisRecente}`);
-        res.download(caminho);
-    } catch (err) {
-        console.error("[Backup] Erro ao baixar:", err);
-        res.status(500).json({ erro: "Erro ao preparar download." });
-    }
-});
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
@@ -638,33 +617,53 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
     }
 });
 
-// ===== ROTA PARA BAIXAR TODOS OS RELATÓRIOS =====
-app.get("/api/backup/todos", autenticar, async (req, res) => {
+// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP COMPLETO =====
+app.get("/api/backup/download", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
     }
 
     try {
-        const nomeZip = `backup_todos_${new Date().toISOString().split("T")[0]}.zip`;
-        const caminhoZip = path.join(backupDir, nomeZip);
+        const backupDir = path.resolve("./backups");
+        if (!fs.existsSync(backupDir)) {
+            return res.status(404).json({ erro: "Pasta de backups não encontrada." });
+        }
 
-        const output = fs.createWriteStream(caminhoZip);
-        const archive = archiver("zip", { zlib: { level: 9 } });
-        archive.pipe(output);
+        // Lista todos os .zip na pasta
+        const arquivos = fs.readdirSync(backupDir)
+            .filter(f => f.endsWith(".zip"))
+            .sort((a, b) => {
+                const aTime = fs.statSync(path.join(backupDir, a)).mtime;
+                const bTime = fs.statSync(path.join(backupDir, b)).mtime;
+                return bTime - aTime;
+            });
 
-        // Adiciona todos os arquivos da pasta de frequências
-        archive.directory(uploadsDir, false);
+        if (arquivos.length === 0) {
+            console.warn("[Backup] Nenhum arquivo ZIP encontrado em ./backups");
+            return res.status(404).json({ erro: "Nenhum backup encontrado no servidor." });
+        }
 
-        await archive.finalize();
+        const maisRecente = arquivos[0];
+        const caminho = path.join(backupDir, maisRecente);
 
-        output.on("close", async () => {
-            console.log(`[Backup completo de relatórios] Gerado: ${nomeZip}`);
-            await registrarLog(req.user.id, "Backup completo de relatórios", nomeZip);
-            res.download(caminhoZip);
+        console.log(`[Backup] Preparando download: ${maisRecente}`);
+        await registrarLog(req.user.id, "Download de backup completo", maisRecente);
+
+        // Garante que o arquivo existe mesmo antes de tentar baixar
+        if (!fs.existsSync(caminho)) {
+            return res.status(404).json({ erro: "Arquivo de backup não encontrado." });
+        }
+
+        res.download(caminho, maisRecente, (err) => {
+            if (err) {
+                console.error("[Backup] Erro ao enviar o arquivo:", err);
+                res.status(500).json({ erro: "Falha ao baixar backup." });
+            } else {
+                console.log(`[Backup] Download iniciado para: ${maisRecente}`);
+            }
         });
-
     } catch (err) {
-        console.error("[Backup todos relatórios] Erro:", err);
-        res.status(500).json({ erro: "Erro ao gerar backup completo de relatórios." });
+        console.error("[Backup] Erro geral na rota /download:", err);
+        res.status(500).json({ erro: "Erro interno ao preparar backup." });
     }
 });
