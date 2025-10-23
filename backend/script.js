@@ -114,6 +114,7 @@ async function seed() {
 
 
     // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
+    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
         // Permite NULL em professor_id
         await pool.query(`
@@ -121,7 +122,7 @@ async function seed() {
     ALTER COLUMN professor_id DROP NOT NULL;
   `);
 
-        // Limpa registros órfãos (frequencias sem professor válido)
+        // 🔹 Corrige dados órfãos antes de recriar a constraint
         await pool.query(`
     UPDATE frequencias
     SET professor_id = NULL
@@ -129,7 +130,7 @@ async function seed() {
     AND professor_id NOT IN (SELECT id FROM professores);
   `);
 
-        // Remove TODAS as foreign keys antigas
+        // 🔹 Remove TODAS as foreign keys antigas
         const oldConstraints = await pool.query(`
     SELECT constraint_name
     FROM information_schema.table_constraints
@@ -141,7 +142,7 @@ async function seed() {
             await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS ${c.constraint_name};`);
         }
 
-        // Cria nova relação SEM apagar frequências
+        // 🔹 Cria nova relação SEM apagar frequências
         await pool.query(`
     ALTER TABLE frequencias
     ADD CONSTRAINT frequencias_professor_id_fkey
@@ -154,6 +155,7 @@ async function seed() {
     } catch (err) {
         console.error("⚠️ Erro ao ajustar relação frequencias-professores:", err);
     }
+
 
     // ===== AJUSTE DE RELAÇÃO PROFESSORES → LOGS =====
     try {
