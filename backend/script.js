@@ -637,3 +637,34 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro interno ao gerar backup diário." });
     }
 });
+
+// ===== ROTA PARA BAIXAR TODOS OS RELATÓRIOS =====
+app.get("/api/backup/todos", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") {
+        return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    try {
+        const nomeZip = `backup_todos_${new Date().toISOString().split("T")[0]}.zip`;
+        const caminhoZip = path.join(backupDir, nomeZip);
+
+        const output = fs.createWriteStream(caminhoZip);
+        const archive = archiver("zip", { zlib: { level: 9 } });
+        archive.pipe(output);
+
+        // Adiciona todos os arquivos da pasta de frequências
+        archive.directory(uploadsDir, false);
+
+        await archive.finalize();
+
+        output.on("close", async () => {
+            console.log(`[Backup completo de relatórios] Gerado: ${nomeZip}`);
+            await registrarLog(req.user.id, "Backup completo de relatórios", nomeZip);
+            res.download(caminhoZip);
+        });
+
+    } catch (err) {
+        console.error("[Backup todos relatórios] Erro:", err);
+        res.status(500).json({ erro: "Erro ao gerar backup completo de relatórios." });
+    }
+});

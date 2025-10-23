@@ -186,4 +186,12 @@ async function carregarEnvios() {
         document.getElementById("lista-envios").innerHTML =
             "<tr><td colspan='2'>Erro ao carregar.</td></tr>";
     }
+
 }
+
+window.alert = (msg) => {
+  const modal = document.getElementById("modalAlerta");
+  const texto = document.getElementById("modalMensagem");
+  modal.style.display = "flex";
+  texto.textContent = msg;
+};

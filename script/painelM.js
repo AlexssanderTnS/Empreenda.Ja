@@ -305,7 +305,7 @@
       <h4>💾 Backup e Segurança</h4>
       <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button id="btnBackup" class="btn">Baixar último backup completo</button>
+        <button id="btnBackupTodos" class="btn">Baixar último backup completo</button>
         <button id="btnBackupHoje" class="btn">Baixar backup diário (arquivos de hoje)</button>
       </div>
 </section>
@@ -426,6 +426,34 @@ function configurarBotoesBackup() {
       a.click();
       a.remove();
     });
+
+      // --- BACKUP TODOS OS RELATÓRIOS ---
+  const btnBackupTodos = document.getElementById("btnBackupTodos");
+  if (btnBackupTodos) {
+    btnBackupTodos.addEventListener("click", async () => {
+      console.log("Gerando backup completo de todos os relatórios...");
+      const token = localStorage.getItem("token");
+
+      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/todos", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!resp.ok) {
+        const msg = await resp.text();
+        alert("Erro ao baixar todos os relatórios: " + msg);
+        return;
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Backup_Todos_Relatorios.zip";
+      a.click();
+      a.remove();
+    });
+  }
+
   }
 
   // --- BACKUP DIÁRIO ---
@@ -535,6 +563,12 @@ function configurarBotoesBackup() {
     }
   });
 
-
-
+  
+  
 })();
+window.alert = (msg) => {
+  const modal = document.getElementById("modalAlerta");
+  const texto = document.getElementById("modalMensagem");
+  modal.style.display = "flex";
+  texto.textContent = msg;
+};

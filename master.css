@@ -96,7 +96,7 @@ body {
 }
 
 .card:hover {
-    transform: translateY(-4px);
+
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
 }
 
@@ -139,11 +139,13 @@ thead {
     animation: fadeIn 0.4s ease;
 }
 
-#btnBackupHoje {
+button {
+    padding:10px ;
     background-color: #007bff;
     color: white;
 }
 
-#btnBackupHoje:hover {
+button:hover {
     background-color: #0056b3;
+    font-weight: 700 ;
 }
