@@ -705,3 +705,61 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro interno ao gerar backup geral." });
     }
 });
+
+// ===== ROTA PARA RESETAR BANCO DE DADOS (somente master) =====
+app.post("/api/resetar-banco", autenticar, async (req, res) => {
+    if (req.user.tipo !== "master") {
+        return res.status(403).json({ erro: "Acesso negado" });
+    }
+
+    try {
+        console.log("⚠️ Solicitado reset completo do banco de dados pelo master...");
+
+        // Remove constraints
+        await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;`);
+        await pool.query(`ALTER TABLE logs DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;`);
+
+        // Limpa tabelas
+        await pool.query("TRUNCATE TABLE logs RESTART IDENTITY;");
+        await pool.query("TRUNCATE TABLE frequencias RESTART IDENTITY;");
+        await pool.query("TRUNCATE TABLE professores RESTART IDENTITY;");
+
+        // Recria o master
+        const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
+        await pool.query(`
+      INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
+      VALUES ('Administrador', 'master', $1, 'master', TRUE)
+      ON CONFLICT (usuario) DO UPDATE
+      SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
+    `, [senhaMaster]);
+
+        // Recria constraints
+        await pool.query(`
+      ALTER TABLE frequencias
+      ADD CONSTRAINT frequencias_professor_id_fkey
+      FOREIGN KEY (professor_id)
+      REFERENCES professores(id)
+      ON DELETE SET NULL;
+    `);
+
+        await pool.query(`
+      ALTER TABLE logs
+      ADD CONSTRAINT logs_professor_id_fkey
+      FOREIGN KEY (professor_id)
+      REFERENCES professores(id)
+      ON DELETE SET NULL;
+    `);
+
+        console.log("✅ Banco resetado com sucesso via painel!");
+        await registrarLog(req.user.id, "Reset completo do banco via painel");
+
+        res.json({
+            sucesso: true,
+            mensagem: "Banco de dados resetado com sucesso. Usuário master recriado (senha: senhamaster123).",
+        });
+
+    } catch (err) {
+        console.error("❌ Erro ao resetar banco via painel:", err);
+        res.status(500).json({ erro: "Erro interno ao resetar o banco de dados." });
+    }
+});

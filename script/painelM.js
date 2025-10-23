@@ -306,7 +306,8 @@
       <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button id="btnBackupGeral" class="btn">📦 Baixar backup geral (todos os relatórios)</button>
-        <button id="btnBackup" class="btn">🧭 Baixar último backup completo</button>
+    <button id="btnResetBanco" class="btn btn-danger">⚠️ Resetar banco de dados (limpar tudo)</button>
+
         <button id="btnBackupHoje" class="btn">📅 Baixar backup diário (arquivos de hoje)</button>
       </div>
     </section>
@@ -562,6 +563,34 @@
     }
   });
 
+
+  // --- RESETAR BANCO DE DADOS ---
+const btnResetBanco = document.getElementById("btnResetBanco");
+if (btnResetBanco) {
+  btnResetBanco.addEventListener("click", async () => {
+    const confirmar = confirm("⚠️ Isso vai APAGAR todos os dados e reiniciar o sistema. Deseja continuar?");
+    if (!confirmar) return;
+
+    try {
+      const resp = await fetch(`${API_URL}/api/resetar-banco`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const dados = await resp.json();
+      if (resp.ok) {
+        alert("✅ " + dados.mensagem);
+        localStorage.removeItem("token");
+        window.location.href = "index.html"; // força relogar como master
+      } else {
+        alert("⚠️ " + (dados.erro || "Erro ao resetar banco."));
+      }
+    } catch (erro) {
+      console.error("Erro ao resetar banco:", erro);
+      alert("Erro de comunicação com o servidor.");
+    }
+  });
+}
 
 
 })();
