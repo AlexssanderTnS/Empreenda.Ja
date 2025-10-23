@@ -590,35 +590,50 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
         const ano = hoje.getFullYear();
         const dataHoje = `${ano}-${mes}-${dia}`;
 
+        console.log(`[Backup diário] Verificando arquivos para a data ${dataHoje} em ${uploadsDir}`);
         const arquivos = fs.readdirSync(uploadsDir).filter(arquivo => {
             const caminho = path.join(uploadsDir, arquivo);
             const stats = fs.statSync(caminho);
             const dataArquivo = stats.mtime.toISOString().split("T")[0];
+            console.log(` → ${arquivo} modificado em ${dataArquivo}`);
             return dataArquivo === dataHoje;
         });
 
         if (arquivos.length === 0) {
+            console.warn(`[Backup diário] Nenhum arquivo encontrado para ${dataHoje}`);
             return res.status(404).json({ erro: "Nenhum arquivo gerado hoje." });
         }
 
         const nomeZip = `backup_diario_${ano}-${mes}-${dia}.zip`;
         const caminhoZip = path.join(backupDir, nomeZip);
+        console.log(`[Backup diário] Criando ZIP: ${nomeZip} com ${arquivos.length} arquivos`);
 
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
+
         archive.pipe(output);
-        for (const arquivo of arquivos) {
+
+        arquivos.forEach(arquivo => {
             archive.file(path.join(uploadsDir, arquivo), { name: arquivo });
-        }
+        });
+
         archive.finalize();
 
         output.on("close", async () => {
-            console.log(`[Backup manual diário] Gerado: ${nomeZip}`);
+            console.log(`[Backup diário] ZIP gerado: ${nomeZip} (${archive.pointer()} bytes)`);
             await registrarLog(req.user.id, "Backup manual diário", nomeZip);
-            res.download(caminhoZip);
+            res.download(caminhoZip, nomeZip, err => {
+                if (err) console.error("[Backup diário] Erro no download:", err);
+            });
         });
+
+        archive.on("error", err => {
+            console.error("[Backup diário] Erro ao criar ZIP:", err);
+            res.status(500).json({ erro: "Erro ao criar backup diário." });
+        });
+
     } catch (err) {
-        console.error("[Backup manual diário] Erro geral:", err);
+        console.error("[Backup diário] Erro geral:", err);
         res.status(500).json({ erro: "Erro interno ao gerar backup diário." });
     }
 });
