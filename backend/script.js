@@ -112,6 +112,35 @@ async function seed() {
     ALTER TABLE professores ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
 `);
 
+    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
+    try {
+        // Permite NULL em professor_id
+        await pool.query(`
+    ALTER TABLE frequencias
+    ALTER COLUMN professor_id DROP NOT NULL;
+  `);
+
+        // Remove chave estrangeira antiga (caso exista)
+        await pool.query(`
+    ALTER TABLE frequencias
+    DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;
+    `);
+
+        // Cria nova relação SEM apagar frequências
+        await pool.query(`
+    ALTER TABLE frequencias
+    ADD CONSTRAINT frequencias_professor_id_fkey
+    FOREIGN KEY (professor_id)
+    REFERENCES professores(id)
+    ON DELETE SET NULL;
+    `);
+
+        console.log("🧩 Relação professor-frequências ajustada (ON DELETE SET NULL).");
+    } catch (err) {
+        console.error("⚠️ Erro ao ajustar relação:", err);
+    }
+
+
 }
 
 //registrar logs
