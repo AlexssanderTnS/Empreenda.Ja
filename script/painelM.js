@@ -337,6 +337,7 @@
         } else if (secao === "config") {
           conteudo.innerHTML = secoes.config;
           configurarAlterarSenha(); // 👈 ativa o formulário de troca de senha
+          configurarBotoesBackup(); // 👈 ativa os botões de backup (NOVO)
         }
         else {
           conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
@@ -389,6 +390,69 @@
       }
     });
   }
+
+  // ==================== BACKUP E SEGURANÇA ====================
+function configurarBotoesBackup() {
+  console.log("🧩 Configurando botões de backup...");
+
+  const btnBackup = document.getElementById("btnBackup");
+  const btnBackupHoje = document.getElementById("btnBackupHoje");
+  const token = localStorage.getItem("token");
+
+  if (!btnBackup && !btnBackupHoje) {
+    console.warn("⚠️ Botões de backup ainda não renderizados no DOM.");
+    return;
+  }
+
+  // --- BACKUP COMPLETO ---
+  if (btnBackup) {
+    btnBackup.addEventListener("click", async () => {
+      console.log("📦 Gerando backup completo...");
+      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!resp.ok) {
+        const msg = await resp.text();
+        alert("Erro ao baixar backup completo: " + msg);
+        return;
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Backup_Completo.zip";
+      a.click();
+      a.remove();
+    });
+  }
+
+  // --- BACKUP DIÁRIO ---
+  if (btnBackupHoje) {
+    btnBackupHoje.addEventListener("click", async () => {
+      console.log("📅 Gerando backup diário...");
+      const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/hoje", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!resp.ok) {
+        const msg = await resp.text();
+        alert("Erro ao baixar backup diário: " + msg);
+        return;
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Backup_Diario.zip";
+      a.click();
+      a.remove();
+    });
+  }
+}
+
 
   // ==================== INICIALIZAÇÃO ====================
   ativarTrocaAbas();
