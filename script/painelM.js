@@ -409,20 +409,28 @@
 
   // ==================== BOTÕES DE BACKUP ====================
   // Espera o DOM carregar completamente antes de buscar os botões
+  // ==================== BOTÕES DE BACKUP ====================
   window.addEventListener("load", () => {
-    const token = localStorage.getItem("token");
 
     // Botão: Backup completo
     const btnBackup = document.getElementById("btnBackup");
     if (btnBackup) {
       btnBackup.addEventListener("click", async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return alert("⚠️ Token não encontrado. Faça login novamente.");
+
+        console.log("🔹 Baixando backup completo com token:", token.slice(0, 15) + "...");
+
         const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
           headers: { Authorization: `Bearer ${token}` }
         });
+
         if (!resp.ok) {
-          alert("⚠️ Erro ao baixar backup completo.");
+          const msg = await resp.text();
+          alert("Erro ao baixar backup completo: " + msg);
           return;
         }
+
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -437,13 +445,21 @@
     const btnBackupHoje = document.getElementById("btnBackupHoje");
     if (btnBackupHoje) {
       btnBackupHoje.addEventListener("click", async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return alert("⚠️ Token não encontrado. Faça login novamente.");
+
+        console.log("🔹 Baixando backup diário com token:", token.slice(0, 15) + "...");
+
         const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/hoje", {
           headers: { Authorization: `Bearer ${token}` }
         });
+
         if (!resp.ok) {
-          alert("⚠️ Erro ao baixar backup diário.");
+          const msg = await resp.text();
+          alert("Erro ao baixar backup diário: " + msg);
           return;
         }
+
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -454,6 +470,7 @@
       });
     }
   });
+
 
 
 })();
