@@ -274,22 +274,12 @@
         </div>
       </div>
     `,
-    backups: `
-      <header class="topbar"><h2>💾 Backups</h2></header>
-      <div class="fade">
-        <p>Últimos backups automáticos realizados:</p>
-        <ul>
-          <li>backup_2025-10-14.db</li>
-          <li>backup_2025-10-13.db</li>
-          <li>backup_2025-10-12.db</li>
-        </ul>
-      </div>
-    `,
+
     config: `
   <header class="topbar"><h2>⚙️ Configurações do Sistema</h2></header>
   <div class="fade">
     <section class="card mb-3">
-      <h4>🔐 Alterar Senha</h4>
+      <h4>Alterar Senha</h4>
       <form id="formSenha">
         <label>Senha atual:</label>
         <input type="password" class="form-control mb-2" id="senhaAtual">
@@ -302,13 +292,13 @@
     </section>
 
     <section class="card">
-      <h4>💾 Backup e Segurança</h4>
+      <h4>Backup e Segurança</h4>
       <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button id="btnBackupGeral" class="btn">📦 Baixar backup geral (todos os relatórios)</button>
-    <button id="btnResetBanco" class="btn btn-danger">⚠️ Resetar banco de dados (limpar tudo)</button>
+        <button id="btnBackupGeral" class="btn">Baixar backup geral (todos os relatórios)</button>
+    <button id="btnResetBanco" class="btn btn-danger">Resetar banco de dados (limpar tudo)</button>
 
-        <button id="btnBackupHoje" class="btn">📅 Baixar backup diário (arquivos de hoje)</button>
+        <button id="btnBackupHoje" class="btn">Baixar backup diário (arquivos de hoje)</button>
       </div>
     </section>
   </div>
@@ -395,7 +385,7 @@
 
   // ==================== BACKUP E SEGURANÇA ====================
   function configurarBotoesBackup() {
-    console.log("🧩 Configurando botões de backup...");
+    console.log("Configurando botões de backup...");
 
     const token = localStorage.getItem("token");
     const btnBackupGeral = document.getElementById("btnBackupGeral");
@@ -403,14 +393,14 @@
     const btnBackupHoje = document.getElementById("btnBackupHoje");
 
     if (!btnBackupGeral && !btnBackup && !btnBackupHoje) {
-      console.warn("⚠️ Botões de backup ainda não renderizados no DOM.");
+      console.warn("Botões de backup ainda não renderizados no DOM.");
       return;
     }
 
     // --- BACKUP GERAL ---
     if (btnBackupGeral) {
       btnBackupGeral.addEventListener("click", async () => {
-        console.log("📦 Gerando backup geral (todos os relatórios)...");
+        console.log("Gerando backup geral (todos os relatórios)...");
         const resp = await fetch(`${API_URL}/api/backup/geral`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -434,7 +424,7 @@
     // --- BACKUP COMPLETO ---
     if (btnBackup) {
       btnBackup.addEventListener("click", async () => {
-        console.log("🧭 Baixando último backup completo...");
+        console.log(" Baixando último backup completo...");
         const resp = await fetch(`${API_URL}/api/backup/download`, {
           headers: { Authorization: `Bearer ${token}` },
         });
