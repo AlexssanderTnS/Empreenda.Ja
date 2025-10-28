@@ -17,8 +17,8 @@ const app = express();
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app", // seu site na Vercel
-            "http://localhost:5500"            // para testes locais
+            "https://empreenda-ja.vercel.app", 
+            "http://localhost:5500"            
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -26,14 +26,14 @@ app.use(
     })
 );
 
-// Garante que o pré-flight OPTIONS receba resposta
+
 app.options("*", cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const SECRET = process.env.JWT_SECRET || "0000";
 
-// ====== CONEXÃO COM POSTGRESQL ======
+
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -47,73 +47,71 @@ async function dbQuery(sql, params = []) {
 
 
 
-// ====== SEED INICIAL ======
+
 async function seed() {
     const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
     const senhaProf = bcrypt.hashSync("senhaprof123", 10);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS professores (
-      id SERIAL PRIMARY KEY,
-      nome TEXT NOT NULL,
-      usuario TEXT UNIQUE NOT NULL,
-      senha TEXT NOT NULL,
-      tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    usuario TEXT UNIQUE NOT NULL,
+    senha TEXT NOT NULL,
+    tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
     );
-  `);
+`);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS logs (
-      id SERIAL PRIMARY KEY,
-      professor_id INTEGER REFERENCES professores(id),
-      acao TEXT NOT NULL,
-      detalhe TEXT,
-      data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id SERIAL PRIMARY KEY,
+    professor_id INTEGER REFERENCES professores(id),
+    acao TEXT NOT NULL,
+    detalhe TEXT,
+    data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-  `);
+`);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS frequencias (
-      id SERIAL PRIMARY KEY,
-      professor_id INTEGER NOT NULL,
-      curso TEXT NOT NULL,
-      local TEXT NOT NULL,
-      turma TEXT NOT NULL,
-      data TEXT NOT NULL,
-      alunos TEXT NOT NULL,
-      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id SERIAL PRIMARY KEY,
+    professor_id INTEGER NOT NULL,
+    curso TEXT NOT NULL,
+    local TEXT NOT NULL,
+    turma TEXT NOT NULL,
+    data TEXT NOT NULL,
+    alunos TEXT NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-  `);
+`);
 
     await pool.query(`
     ALTER TABLE professores 
     ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
-  `);
+`);
 
     // ===== INSERÇÃO DE USUÁRIOS PADRÃO =====
     await pool.query(
-        `INSERT INTO professores (nome, usuario, senha, tipo)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (usuario) DO NOTHING`,
-        ["Administrador", "master", senhaMaster, "master"]
+    `INSERT INTO professores (nome, usuario, senha, tipo)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (usuario) DO NOTHING`,
+    ["Administrador", "master", senhaMaster, "master"]
     );
 
 
-    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
-        // Permite NULL em professor_id
+        
         await pool.query(`
     ALTER TABLE frequencias
     ALTER COLUMN professor_id DROP NOT NULL;
-  `);
+`);
 
-        // 🔹 Corrige dados órfãos antes de recriar a constraint
         await pool.query(`
     UPDATE frequencias
     SET professor_id = NULL
     WHERE professor_id IS NOT NULL
     AND professor_id NOT IN (SELECT id FROM professores);
-  `);
+`);
 
         // 🔹 Remove TODAS as foreign keys antigas
         const oldConstraints = await pool.query(`
@@ -121,7 +119,7 @@ async function seed() {
     FROM information_schema.table_constraints
     WHERE table_name = 'frequencias'
     AND constraint_type = 'FOREIGN KEY';
-  `);
+`);
 
         for (const c of oldConstraints.rows) {
             await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS ${c.constraint_name};`);
@@ -134,11 +132,11 @@ async function seed() {
     FOREIGN KEY (professor_id)
     REFERENCES professores(id)
     ON DELETE SET NULL;
-  `);
+`);
 
-        console.log("🧩 Relação professor-frequências corrigida e garantida (ON DELETE SET NULL).");
+        console.log("Relação professor-frequências corrigida e garantida (ON DELETE SET NULL).");
     } catch (err) {
-        console.error("⚠️ Erro ao ajustar relação frequencias-professores:", err);
+        console.error(" Erro ao ajustar relação frequencias-professores:", err);
     }
 
 
@@ -162,9 +160,9 @@ async function seed() {
             ON DELETE SET NULL;
     `);
 
-        console.log("🧩 Relação professor-logs ajustada (ON DELETE SET NULL).");
+        console.log(" Relação professor-logs ajustada (ON DELETE SET NULL).");
     } catch (err) {
-        console.error("⚠️ Erro ao ajustar logs-professores:", err);
+        console.error(" Erro ao ajustar logs-professores:", err);
     }
 }
 
@@ -228,7 +226,7 @@ app.post("/api/login", async (req, res) => {
             token,
             nome: user.nome,
             tipo: user.tipo,
-            precisaTrocar: user.precisa_trocar_senha // 👈 envia pro frontend
+            precisaTrocar: user.precisa_trocar_senha 
         });
 
     } catch (e) {
@@ -240,25 +238,23 @@ app.post("/api/login", async (req, res) => {
 
 
 
-// ====== CONFIGURAÇÃO DO UPLOAD (MULTER) ======
 
-// Cria pasta se não existir
 const uploadDir = "./uploads/frequencias";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-// Define como o arquivo será salvo
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
 
-        // Nome do professor tratado
+        
         const nomeProf = req.user.nome
-            .replace(/\s+/g, "_")       // troca espaços por "_"
-            .normalize("NFD")           // remove acentos
+            .replace(/\s+/g, "_")       
+            .normalize("NFD")           
             .replace(/[\u0300-\u036f]/g, "");
 
-        // Data formatada dd_mm_aaaa
+        
         const agora = new Date();
         const dia = String(agora.getDate()).padStart(2, "0");
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
@@ -271,7 +267,7 @@ const storage = multer.diskStorage({
     },
 });
 
-// ===== ALTERAR SENHA =====
+
 app.put("/api/alterar-senha", autenticar, async (req, res) => {
     const { senhaAtual, novaSenha } = req.body;
     if (!senhaAtual || !novaSenha) {
@@ -288,7 +284,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
         const senhaCorreta = bcrypt.compareSync(senhaAtual, user.senha);
         if (!senhaCorreta) return res.status(401).json({ erro: "Senha atual incorreta." });
 
-        // Atualiza no banco + marca que não precisa mais trocar
+        
         const novaHash = bcrypt.hashSync(novaSenha, 10);
         await dbQuery(`
             UPDATE professores 
@@ -308,7 +304,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
 
 const upload = multer({ storage });
 
-// ====== ROTA 1: Download do modelo da ata ======
+
 app.get("/api/frequencia/modelo", autenticar, (req, res) => {
     const modeloPath = path.resolve("./Planilha.xlsx");
     if (fs.existsSync(modeloPath)) {
@@ -320,7 +316,7 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 
-// ====== ROTA 2: Upload da planilha preenchida ======
+
 app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ erro: "Nenhum arquivo enviado." });
@@ -332,7 +328,7 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
         await registrarLog(req.user.id, "Upload de frequência", req.file.filename);
 
 
-        // Salva no banco: quem enviou, qual arquivo e a data
+    
         await dbQuery(
             `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
             VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -349,7 +345,7 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
 
 
 
-// ====== ROTA 3: Listar envios do professor ======
+
 app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
     try {
         const linhas = await dbQuery(
@@ -367,7 +363,7 @@ app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
 });
 
 
-// Cadastro de professor (somente master)
+
 app.post("/api/professores", autenticar, async (req, res) => {
     if (req.user.tipo !== "master")
         return res.status(403).json({ erro: "Acesso negado" });
@@ -393,7 +389,7 @@ app.post("/api/professores", autenticar, async (req, res) => {
     }
 });
 
-// ===== EXCLUIR PROFESSOR (somente master) =====
+
 app.delete('/api/professores/:id', autenticar, async (req, res) => {
     if (req.user.tipo !== 'master') {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -413,7 +409,7 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
 });
 
 
-// ===== LISTAR PROFESSORES (somente master) =====
+
 app.get('/api/professores/listar', autenticar, async (req, res) => {
     if (req.user.tipo !== 'master') {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -431,7 +427,7 @@ app.get('/api/professores/listar', autenticar, async (req, res) => {
 });
 
 
-// Lançar frequência
+
 app.post("/api/frequencia", autenticar, async (req, res) => {
     const { curso, local, turma, data, alunos } = req.body;
     if (!curso || !local || !turma || !data || !alunos)
@@ -450,7 +446,7 @@ app.post("/api/frequencia", autenticar, async (req, res) => {
     }
 });
 
-// Relatórios (somente master)
+
 app.get("/api/relatorios", autenticar, async (req, res) => {
     if (req.user.tipo !== "master")
         return res.status(403).json({ erro: "Acesso negado" });
@@ -524,7 +520,7 @@ async function gerarBackupZip() {
     });
 }
 
-// ===== CRON — A CADA 25 HORAS =====
+
 cron.schedule("0 */25 * * *", async () => {
     console.log("[Backup] Gerando ZIP automático...");
     try {
@@ -534,12 +530,12 @@ cron.schedule("0 */25 * * *", async () => {
     }
 });
 
-// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP =====
+
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
     await seed();
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
 
 app.get("/api/backup/hoje", autenticar, async (req, res) => {
@@ -602,7 +598,7 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
     }
 });
 
-// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP COMPLETO =====
+
 app.get("/api/backup/download", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -614,7 +610,6 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
             return res.status(404).json({ erro: "Pasta de backups não encontrada." });
         }
 
-        // Lista todos os .zip na pasta
         const arquivos = fs.readdirSync(backupDir)
             .filter(f => f.endsWith(".zip"))
             .sort((a, b) => {
@@ -634,7 +629,7 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
         console.log(`[Backup] Preparando download: ${maisRecente}`);
         await registrarLog(req.user.id, "Download de backup completo", maisRecente);
 
-        // Garante que o arquivo existe mesmo antes de tentar baixar
+
         if (!fs.existsSync(caminho)) {
             return res.status(404).json({ erro: "Arquivo de backup não encontrado." });
         }
@@ -653,7 +648,7 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
     }
 });
 
-// ===== ROTA PARA BACKUP GERAL (TODOS OS RELATÓRIOS) =====
+
 app.get("/api/backup/geral", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -665,12 +660,12 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
 
         console.log(`[Backup geral] Criando arquivo com todos os relatórios...`);
 
-        // Cria o ZIP com tudo dentro da pasta uploads/frequencias/
+        
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
         archive.pipe(output);
 
-        archive.directory(uploadsDir, false); // 👈 adiciona todos os arquivos existentes
+        archive.directory(uploadsDir, false); 
         archive.finalize();
 
         output.on("close", async () => {
@@ -691,51 +686,51 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
     }
 });
 
-// ===== ROTA PARA RESETAR BANCO DE DADOS (somente master) =====
+
 app.post("/api/resetar-banco", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
     }
 
     try {
-        console.log("⚠️ Solicitado reset completo do banco de dados pelo master...");
+        console.log("Solicitado reset completo do banco de dados pelo master...");
 
-        // Remove constraints
+        
         await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;`);
         await pool.query(`ALTER TABLE logs DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;`);
 
-        // Limpa tabelas
+        
         await pool.query("TRUNCATE TABLE logs RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE frequencias RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE professores RESTART IDENTITY;");
 
-        // Recria o master
+       
         const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
         await pool.query(`
-      INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
-      VALUES ('Administrador', 'master', $1, 'master', TRUE)
-      ON CONFLICT (usuario) DO UPDATE
-      SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
+        INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
+        VALUES ('Administrador', 'master', $1, 'master', TRUE)
+        ON CONFLICT (usuario) DO UPDATE
+        SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
     `, [senhaMaster]);
 
-        // Recria constraints
+    
         await pool.query(`
-      ALTER TABLE frequencias
-      ADD CONSTRAINT frequencias_professor_id_fkey
-      FOREIGN KEY (professor_id)
-      REFERENCES professores(id)
-      ON DELETE SET NULL;
+        ALTER TABLE frequencias
+        ADD CONSTRAINT frequencias_professor_id_fkey
+        FOREIGN KEY (professor_id)
+        REFERENCES professores(id)
+        ON DELETE SET NULL;
     `);
 
         await pool.query(`
-      ALTER TABLE logs
-      ADD CONSTRAINT logs_professor_id_fkey
-      FOREIGN KEY (professor_id)
-      REFERENCES professores(id)
-      ON DELETE SET NULL;
+        ALTER TABLE logs
+        ADD CONSTRAINT logs_professor_id_fkey
+        FOREIGN KEY (professor_id)
+        REFERENCES professores(id)
+        ON DELETE SET NULL;
     `);
 
-        console.log("✅ Banco resetado com sucesso via painel!");
+        console.log("Banco resetado com sucesso via painel!");
         await registrarLog(req.user.id, "Reset completo do banco via painel");
 
         res.json({
@@ -744,7 +739,7 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
         });
 
     } catch (err) {
-        console.error("❌ Erro ao resetar banco via painel:", err);
+        console.error("Erro ao resetar banco via painel:", err);
         res.status(500).json({ erro: "Erro interno ao resetar o banco de dados." });
     }
 });
