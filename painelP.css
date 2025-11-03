@@ -141,3 +141,18 @@ table th {
         transform: translateY(0);
     }
 }
+
+.mensagem {
+  text-align: center;
+  margin-top: 10px;
+  font-weight: bold;
+  transition: opacity 0.3s ease;
+}
+
+.mensagem.sucesso {
+  color: #198754; /* verde */
+}
+
+.mensagem.erro {
+  color: #dc3545; /* vermelho */
+}
