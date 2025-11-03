@@ -24,54 +24,57 @@ if (fecharLogin) {
 // ==================== LÓGICA DE LOGIN ====================
 const form = document.getElementById("formLogin");
 if (form) {
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const usuario = document.getElementById("usuario").value.trim();
-        const senha = document.getElementById("senha").value.trim();
+    const usuario = document.getElementById("usuario").value.trim();
+    const senha = document.getElementById("senha").value.trim();
+    const msg = document.getElementById("mensagemLogin");
 
-        // Limpa qualquer sessão antiga antes de logar novamente
-        localStorage.removeItem("token");
-        localStorage.removeItem("precisaTrocar");
+    msg.textContent = "";
+    msg.className = "mensagem-login"; // limpa estilos anteriores
 
-        if (!usuario || !senha) {
-            alert("Preencha usuário e senha.");
-            return;
-        }
+    localStorage.removeItem("token");
+    localStorage.removeItem("precisaTrocar");
 
-        try {
-            const resposta = await fetch(`${API_URL}/api/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ usuario, senha }),
-            });
+    if (!usuario || !senha) {
+      msg.textContent = "Preencha usuário e senha.";
+      msg.classList.add("mostrar", "erro");
+      return;
+    }
 
-            const dados = await resposta.json();
+    try {
+      const resposta = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario, senha }),
+      });
 
-            if (!resposta.ok) {
-                alert(dados.erro || "Usuário ou senha incorretos.");
-                return;
-            }
+      const dados = await resposta.json();
 
-            // Guarda token e flag de troca de senha
-            localStorage.setItem("token", dados.token);
-            localStorage.setItem("precisaTrocar", dados.precisaTrocar ? "true" : "false");
+      if (!resposta.ok) {
+        msg.textContent = dados.erro || "Usuário ou senha incorretos.";
+        msg.classList.add("mostrar", "erro");
+        return;
+      }
 
-            console.log("[login.js] Login bem-sucedido:", {
-                usuario: dados.nome,
-                tipo: dados.tipo,
-                precisaTrocar: dados.precisaTrocar,
-            });
+      // login bem-sucedido
+      localStorage.setItem("token", dados.token);
+      localStorage.setItem("precisaTrocar", dados.precisaTrocar ? "true" : "false");
 
-            // Redirecionamento por tipo de usuário
-            if (dados.tipo === "master") {
-                window.location.href = "/painel-master.html";
-            } else {
-                window.location.href = "/painel-professor.html";
-            }
-        } catch (erro) {
-            console.error("Erro na requisição:", erro);
-            alert("Erro ao conectar com o servidor. Verifique sua conexão ou tente novamente mais tarde.");
-        }
-    });
+      msg.textContent = "Login realizado com sucesso!";
+      msg.classList.add("mostrar", "sucesso");
+
+      // Redirecionamento após 1,5s
+      setTimeout(() => {
+        if (dados.tipo === "master") window.location.href = "/painel-master.html";
+        else window.location.href = "/painel-professor.html";
+      }, 1500);
+
+    } catch (erro) {
+      console.error("Erro na requisição:", erro);
+      msg.textContent = "Erro ao conectar com o servidor.";
+      msg.classList.add("mostrar", "erro");
+    }
+  });
 }
