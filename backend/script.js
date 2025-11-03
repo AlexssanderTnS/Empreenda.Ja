@@ -13,6 +13,7 @@ import archiver from "archiver";
 
 const app = express();
 
+// ==================== CONFIGURAÇÃO CORS ====================
 app.use(
   cors({
     origin: [
@@ -31,6 +32,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const SECRET = process.env.JWT_SECRET || "0000";
 
+// ==================== CONEXÃO COM O POSTGRESQL ====================
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -253,12 +255,70 @@ app.get("/api/relatorios", autenticar, async (req, res) => {
   }
 });
 
-// ==================== RESTANTE DAS ROTAS (logs, backup, reset, etc.) ====================
-// Mantém exatamente como está no seu código atual, pois não interferem em 'turma'.
+// ==================== LOGS RECENTES ====================
+app.get("/api/logs/recentes", autenticar, async (req, res) => {
+  if (req.user.tipo !== "master") {
+    return res.status(403).json({ erro: "Acesso negado" });
+  }
 
-// ==================== START SERVER ====================
+  try {
+    const linhas = await dbQuery(`
+      SELECT 
+        l.id,
+        l.acao,
+        l.detalhe,
+        l.data_hora,
+        COALESCE(p.nome, 'Professor removido') AS professor_nome
+      FROM logs l
+      LEFT JOIN professores p ON p.id = l.professor_id
+      ORDER BY l.data_hora DESC
+      LIMIT 10
+    `);
+    res.json(linhas);
+  } catch (e) {
+    console.error("Erro ao carregar logs:", e);
+    res.status(500).json({ erro: "Erro ao carregar ações recentes" });
+  }
+});
+
+// ==================== BACKUP AUTOMÁTICO ====================
+const backupDir = path.resolve("./backups");
+if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+
+async function gerarBackupZip() {
+  const agora = new Date();
+  const dataFormatada = agora.toISOString().replace(/[:.]/g, "-");
+  const nomeArquivo = `backup_${dataFormatada}.zip`;
+  const caminhoFinal = path.join(backupDir, nomeArquivo);
+
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(caminhoFinal);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    output.on("close", () => {
+      console.log(`[Backup] Gerado: ${nomeArquivo} (${archive.pointer()} bytes)`);
+      resolve(caminhoFinal);
+    });
+
+    archive.on("error", (err) => reject(err));
+    archive.pipe(output);
+    archive.directory(uploadDir, false);
+    archive.finalize();
+  });
+}
+
+cron.schedule("0 2 * * *", async () => {
+  console.log("[Backup] Gerando ZIP automático às 2h...");
+  try {
+    await gerarBackupZip();
+  } catch (err) {
+    console.error("[Backup] Erro ao gerar ZIP:", err);
+  }
+});
+
+// ==================== INÍCIO DO SERVIDOR ====================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
   await seed();
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
