@@ -186,7 +186,8 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
 });
 
 // ==================== UPLOAD DE FREQUÊNCIA ====================
-const uploadDir = "./uploads/frequencias";
+// ==================== UPLOAD DE FREQUÊNCIA ====================
+const uploadDir = path.join(process.cwd(), "uploads/frequencias");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -205,7 +206,12 @@ const upload = multer({ storage });
 
 app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
   try {
-    const turma = req.body.turma || "—";
+    if (!req.file) {
+      return res.status(400).json({ erro: "Nenhum arquivo foi enviado." });
+    }
+
+    // `multer` popula req.body *depois* de processar o arquivo
+    const turma = req.body?.turma?.trim() || "—";
     const nomeArquivo = req.file.filename;
     const dataHoje = new Date().toISOString().split("T")[0];
 
@@ -216,12 +222,29 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
     );
 
     await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
-    res.json({ sucesso: true, arquivo: nomeArquivo });
+    res.json({ sucesso: true, mensagem: "✅ Frequência salva com sucesso!" });
   } catch (erro) {
     console.error("Erro ao salvar upload:", erro);
     res.status(500).json({ erro: "Erro ao salvar frequência." });
   }
 });
+
+
+pp.get("/api/frequencia/modelo", autenticar, (req, res) => {
+  try {
+    const caminhoModelo = path.join(process.cwd(), "Planilha.xlsx");
+
+    if (!fs.existsSync(caminhoModelo)) {
+      return res.status(404).json({ erro: "Modelo de planilha não encontrado no servidor." });
+    }
+
+    res.download(caminhoModelo, "Planilha.xlsx");
+  } catch (erro) {
+    console.error("Erro ao enviar modelo:", erro);
+    res.status(500).json({ erro: "Erro ao enviar modelo da planilha." });
+  }
+});
+
 
 // ==================== MINHAS FREQUÊNCIAS ====================
 app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
