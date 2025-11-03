@@ -14,22 +14,34 @@ import archiver from "archiver";
 const app = express();
 
 // ==================== CORS E CONFIGURAÇÕES ====================
+// ==================== CORS E CONFIGURAÇÕES ====================
+import cors from "cors";
+import express from "express";
+import path from "path";
+
 app.use(
   cors({
     origin: [
-      "https://empreenda-ja.vercel.app",
-      "http://localhost:5500"
+      "https://empreenda-ja.vercel.app", // frontend da Vercel
+      "http://localhost:5500"            // para testes locais
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
+// Garante que requisições de preflight (OPTIONS) recebam resposta
 app.options("*", cors());
+
+// Interpreta JSON antes de qualquer rota
 app.use(express.json());
+
+// Servir arquivos estáticos (como uploads)
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const SECRET = process.env.JWT_SECRET || "0000";
+
 
 // ==================== CONEXÃO COM O POSTGRESQL ====================
 const pool = new Pool({
