@@ -7,13 +7,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
+import path from "path";
 import archiver from "archiver";
 
 const app = express();
 
-// ==================== CORS E CONFIGURAÇÕES ====================
 // ==================== CORS E CONFIGURAÇÕES ====================
 
 app.use(
@@ -186,7 +185,6 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
 });
 
 // ==================== UPLOAD DE FREQUÊNCIA ====================
-// ==================== UPLOAD DE FREQUÊNCIA ====================
 const uploadDir = path.join(process.cwd(), "uploads/frequencias");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -230,20 +228,24 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
 });
 
 
-pp.get("/api/frequencia/modelo", autenticar, (req, res) => {
+// ==================== DOWNLOAD DO MODELO DE PLANILHA ====================
+app.get("/api/frequencia/modelo", autenticar, (req, res) => {
   try {
-    const caminhoModelo = path.join(process.cwd(), "Planilha.xlsx");
+    const caminhoModelo = path.resolve("./Planilha.xlsx");
 
     if (!fs.existsSync(caminhoModelo)) {
+      console.error("❌ Arquivo de modelo não encontrado em:", caminhoModelo);
       return res.status(404).json({ erro: "Modelo de planilha não encontrado no servidor." });
     }
 
+    console.log("📤 Enviando modelo:", caminhoModelo);
     res.download(caminhoModelo, "Planilha.xlsx");
   } catch (erro) {
     console.error("Erro ao enviar modelo:", erro);
     res.status(500).json({ erro: "Erro ao enviar modelo da planilha." });
   }
 });
+
 
 
 // ==================== MINHAS FREQUÊNCIAS ====================
