@@ -5,9 +5,7 @@ if (!token) {
     window.location.href = "index.html";
 }
 
-
-
-// Sair
+// ==================== SAIR ====================
 document.getElementById("logout").addEventListener("click", () => {
     localStorage.removeItem("token");
     localStorage.removeItem("precisaTrocar");
@@ -31,34 +29,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const precisaTrocar = precisaTrocarLS || precisaTrocarJWT;
-    console.log("[painelP] precisaTrocar ->", { precisaTrocarLS, precisaTrocarJWT, precisaTrocar });
 
     // ===== TROCA DE SENHA =====
     if (precisaTrocar) {
         const modal = document.getElementById("modalTrocaSenha");
-        if (!modal) {
-            console.error("Elemento #modalTrocaSenha não encontrado no DOM.");
-        } else {
-            modal.style.display = "flex"; // precisa ter CSS que suporte 'flex' no overlay
-        }
+        if (modal) modal.style.display = "flex";
 
         const form = document.getElementById("formTrocaSenha");
-        if (!form) {
-            console.error("Elemento #formTrocaSenha não encontrado.");
-        } else {
+        if (form) {
             form.addEventListener("submit", async (e) => {
                 e.preventDefault();
-
                 const senhaAtual = document.getElementById("senhaAtual").value.trim();
                 const novaSenha = document.getElementById("novaSenha").value.trim();
                 const confirmarSenha = document.getElementById("confirmarSenha").value.trim();
 
+                const msg = form.querySelector(".mensagem") || document.createElement("p");
+                msg.className = "mensagem";
+                form.appendChild(msg);
+                msg.textContent = "";
+
                 if (!senhaAtual || !novaSenha || !confirmarSenha) {
-                    alert("Preencha todos os campos!");
+                    msg.textContent = "Preencha todos os campos!";
+                    msg.classList.add("erro");
                     return;
                 }
                 if (novaSenha !== confirmarSenha) {
-                    alert("As senhas novas não coincidem!");
+                    msg.textContent = "As senhas novas não coincidem!";
+                    msg.classList.add("erro");
                     return;
                 }
 
@@ -74,15 +71,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const dados = await resp.json();
                     if (resp.ok) {
-                        alert("✅ Senha alterada com sucesso!");
+                        msg.textContent = "✅ Senha alterada com sucesso!";
+                        msg.classList.remove("erro");
+                        msg.classList.add("sucesso");
                         localStorage.removeItem("precisaTrocar");
-                        if (modal) modal.style.display = "none";
+                        setTimeout(() => (modal.style.display = "none"), 1500);
                     } else {
-                        alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+                        msg.textContent = dados.erro || "Erro ao alterar senha.";
+                        msg.classList.add("erro");
                     }
                 } catch (erro) {
                     console.error("Erro ao alterar senha:", erro);
-                    alert("Erro de comunicação com o servidor.");
+                    msg.textContent = "Erro de comunicação com o servidor.";
+                    msg.classList.add("erro");
                 }
             });
         }
@@ -124,13 +125,29 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===== UPLOAD =====
     const formUpload = document.getElementById("formUpload");
     if (formUpload) {
+        // Adiciona o elemento de mensagem visual
+        const msg = document.createElement("p");
+        msg.id = "mensagemEnvio";
+        msg.className = "mensagem";
+        formUpload.parentNode.insertBefore(msg, formUpload.nextSibling);
+
         formUpload.addEventListener("submit", async (e) => {
             e.preventDefault();
+            msg.textContent = "";
+            msg.className = "mensagem";
+
+            const turma = document.getElementById("turma")?.value.trim() || "";
             const arquivo = document.getElementById("arquivo").files[0];
-            if (!arquivo) return alert("Selecione uma planilha antes de enviar.");
+
+            if (!arquivo) {
+                msg.textContent = "Selecione uma planilha antes de enviar.";
+                msg.classList.add("erro");
+                return;
+            }
 
             const formData = new FormData();
             formData.append("arquivo", arquivo);
+            formData.append("turma", turma);
 
             try {
                 const resp = await fetch(`${API_URL}/api/frequencia/upload`, {
@@ -141,14 +158,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const dados = await resp.json();
                 if (resp.ok) {
-                    alert("✅ Enviado com sucesso!");
+                    msg.textContent = "✅ Enviado com sucesso!";
+                    msg.classList.add("sucesso");
+                    formUpload.reset();
                     carregarEnvios();
                 } else {
-                    alert("⚠️ " + (dados.erro || "Erro ao enviar arquivo."));
+                    msg.textContent = dados.erro || "Erro ao enviar arquivo.";
+                    msg.classList.add("erro");
                 }
             } catch (erro) {
                 console.error(erro);
-                alert("Erro de comunicação com o servidor.");
+                msg.textContent = "Erro de comunicação com o servidor.";
+                msg.classList.add("erro");
             }
         });
     }
@@ -186,6 +207,4 @@ async function carregarEnvios() {
         document.getElementById("lista-envios").innerHTML =
             "<tr><td colspan='2'>Erro ao carregar.</td></tr>";
     }
-
 }
-
