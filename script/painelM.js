@@ -40,32 +40,37 @@
   }
 
   // ==================== RELATÓRIOS ====================
-  async function carregarRelatorios() {
-    const tokenValido = await validarToken();
-    if (!tokenValido) return;
+ // ==================== RELATÓRIOS ====================
+async function carregarRelatorios() {
+  const tokenValido = await validarToken();
+  if (!tokenValido) return;
 
-    try {
-      const resposta = await fetch(`${API_URL}/api/relatorios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dados = await resposta.json();
+  try {
+    const resposta = await fetch(`${API_URL}/api/relatorios`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const dados = await resposta.json();
 
-      let linhas =
-        dados.length === 0
-          ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
-          : dados
+    let linhas =
+      dados.length === 0
+        ? `<tr><td colspan="4" class="text-center text-muted">Nenhum envio encontrado.</td></tr>`
+        : dados
             .map(
               (l) => `
               <tr>
                 <td>${l.professor_nome}</td>
                 <td>${l.data}</td>
-                <td>${l.alunos ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">📥 Baixar</a>` : "—"}</td>
-                <td>${l.curso || "—"}</td>
+                <td>${
+                  l.alunos
+                    ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">📥 Baixar</a>`
+                    : "—"
+                }</td>
+                <td>${l.turma || "—"}</td>
               </tr>`
             )
             .join("");
 
-      conteudo.innerHTML = `
+    conteudo.innerHTML = `
       <header class="topbar"><h2>📄 Relatórios de Envios</h2></header>
       <div class="fade">
         <table class="table table-striped table-bordered">
@@ -74,17 +79,17 @@
               <th>Professor</th>
               <th>Data do Envio</th>
               <th>Arquivo</th>
-              <th>Curso</th>
+              <th>Turma</th>
             </tr>
           </thead>
           <tbody>${linhas}</tbody>
         </table>
       </div>`;
-    } catch (erro) {
-      conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
-      console.error("Erro ao carregar relatórios:", erro);
-    }
+  } catch (erro) {
+    conteudo.innerHTML = `<p class="text-danger">Erro ao carregar relatórios.</p>`;
+    console.error("Erro ao carregar relatórios:", erro);
   }
+}
 
 
   // ==================== LISTAR PROFESSORES ====================
