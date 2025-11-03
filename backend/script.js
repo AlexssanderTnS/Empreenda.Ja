@@ -248,14 +248,13 @@ app.get("/api/relatorios", autenticar, async (req, res) => {
 
   try {
     const linhas = await dbQuery(`
-      SELECT 
+    SELECT 
         f.id,
-        COALESCE(p.nome, f.professor_nome) AS professor_nome,
+        f.professor_nome,
         f.data,
         f.turma,
         f.alunos
       FROM frequencias f
-      LEFT JOIN professores p ON p.id = f.professor_id
       ORDER BY f.data DESC, f.id DESC
     `);
     res.json(linhas);
