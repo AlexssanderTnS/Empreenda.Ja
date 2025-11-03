@@ -2,71 +2,76 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Professor - Empreenda.Já</title>
-    <link rel="stylesheet" href="painelP.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel do Professor - Empreenda.Já</title>
+  <link rel="stylesheet" href="painelP.css" />
 </head>
 
 <body>
-    <header class="topbar">
-        <h1>Painel do Professor</h1>
-        <button id="logout" class="btn-sair">Sair</button>
-    </header>
+  <header class="topbar">
+    <h1>Painel do Professor</h1>
+    <button id="logout" class="btn-sair">Sair</button>
+  </header>
 
-    <main class="container">
-        <h2 id="bemvindo">Bem-vindo(a)!</h2>
+  <main class="container">
+    <h2 id="bemvindo">Bem-vindo(a)!</h2>
 
-        <section class="acoes">
-            <h3>Baixe a planilha, preencha e envie logo abaixo.</h3>
-            <button id="btnDownloadModelo" class="btn baixar">📥 Baixar Modelo da Planilha</button>
-        </section>
+    <section class="acoes">
+      <h3>Baixe a planilha, preencha e envie logo abaixo.</h3>
+      <button id="btnDownloadModelo" class="btn baixar">📥 Baixar Modelo da Planilha</button>
+    </section>
 
-        <section class="upload">
-            <h3>Enviar Planilha Preenchida</h3>
-            <form id="formUpload">
-                <input type="file" id="arquivo" accept=".xlsx" required>
-                <button type="submit" class="btn enviar">Enviar</button>
-            </form>
-        </section>
+    <section class="upload">
+      <h3>Enviar Planilha Preenchida</h3>
+      <form id="formUpload">
+        <label for="turma">Turma:</label>
+        <input type="text" id="turma" name="turma" placeholder="Ex: Turma 01 - Tarde" required />
 
-        <section class="historico">
-            <h3>Seus Envios Recentes</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Arquivo</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-envios">
-                    <tr>
-                        <td colspan="2">Carregando...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-    </main>
+        <input type="file" id="arquivo" accept=".xlsx" required />
+        <button type="submit" class="btn enviar">Enviar</button>
+      </form>
 
-    <div id="modalTrocaSenha" class="modal-overlay">
-        <div class="modal">
-            <h2>Alterar Senha</h2>
-            <p>Por segurança, altere sua senha antes de continuar.</p>
-            <form id="formTrocaSenha">
-                <label>Senha atual:</label>
-                <input type="password" id="senhaAtual" required>
-                <label>Nova senha:</label>
-                <input type="password" id="novaSenha" required>
-                <label>Confirmar nova senha:</label>
-                <input type="password" id="confirmarSenha" required>
-                <button type="submit">Atualizar Senha</button>
-            </form>
-        </div>
+      <!-- Mensagem de retorno -->
+      <p id="mensagemEnvio" class="mensagem"></p>
+    </section>
+
+    <section class="historico">
+      <h3>Seus Envios Recentes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Arquivo</th>
+          </tr>
+        </thead>
+        <tbody id="lista-envios">
+          <tr>
+            <td colspan="2">Carregando...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="modalTrocaSenha" class="modal-overlay">
+    <div class="modal">
+      <h2>Alterar Senha</h2>
+      <p>Por segurança, altere sua senha antes de continuar.</p>
+      <form id="formTrocaSenha">
+        <label>Senha atual:</label>
+        <input type="password" id="senhaAtual" required />
+        <label>Nova senha:</label>
+        <input type="password" id="novaSenha" required />
+        <label>Confirmar nova senha:</label>
+        <input type="password" id="confirmarSenha" required />
+        <button type="submit">Atualizar Senha</button>
+      </form>
     </div>
+  </div>
 
-
-    <script src="/script/modal.js"></script>
-    <script src="/script/painelP.js"></script>
+  <script src="/script/modal.js"></script>
+  <script src="/script/painelP.js"></script>
 </body>
 
 </html>
