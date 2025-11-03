@@ -74,11 +74,15 @@
         alt="IBAP RJ" style="width:120px; margin-bottom:10px;">
       <span class="fechar-modal" id="fecharLogin">&times;</span> <!-- botão X -->
       <h2>Login do Professor</h2>
-      <form id="formLogin">
-        <input type="text" id="usuario" placeholder="Usuário" required />
-        <input type="password" id="senha" placeholder="Senha" required />
-        <button type="submit" class="btn-primario">Entrar</button>
-      </form>
+     <form id="formLogin">
+      <input type="text" id="usuario" placeholder="Usuário" required />
+      <input type="password" id="senha" placeholder="Senha" required />
+
+  <!-- Mensagem de erro ou sucesso -->
+      <div id="mensagemLogin" class="mensagem-login"></div>
+
+      <button type="submit" class="btn-primario">Entrar</button>
+    </form>
     </div>
   </div>
 
@@ -157,5 +161,6 @@
 
 
 </body>
+
 
 </html>
