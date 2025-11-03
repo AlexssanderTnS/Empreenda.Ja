@@ -13,7 +13,7 @@ import archiver from "archiver";
 
 const app = express();
 
-// ==================== CONFIGURAÇÃO CORS ====================
+// ==================== CORS E CONFIGURAÇÕES ====================
 app.use(
   cors({
     origin: [
@@ -25,7 +25,6 @@ app.use(
     credentials: true,
   })
 );
-
 app.options("*", cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -234,24 +233,88 @@ app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
 
 // ==================== RELATÓRIOS MASTER ====================
 app.get("/api/relatorios", autenticar, async (req, res) => {
-  if (req.user.tipo !== "master")
+  if (req.user.tipo !== "master") {
     return res.status(403).json({ erro: "Acesso negado" });
+  }
 
   try {
     const linhas = await dbQuery(`
       SELECT 
         f.id,
-        f.professor_nome,
+        COALESCE(p.nome, f.professor_nome) AS professor_nome,
         f.data,
         f.turma,
         f.alunos
       FROM frequencias f
+      LEFT JOIN professores p ON p.id = f.professor_id
       ORDER BY f.data DESC, f.id DESC
     `);
     res.json(linhas);
   } catch (e) {
-    console.error(e);
+    console.error("Erro ao gerar relatório:", e);
     res.status(500).json({ erro: "Erro ao gerar relatório" });
+  }
+});
+
+// ==================== PROFESSORES (MASTER) ====================
+app.get("/api/professores/listar", autenticar, async (req, res) => {
+  if (req.user.tipo !== "master") {
+    return res.status(403).json({ erro: "Acesso negado" });
+  }
+
+  try {
+    const professores = await dbQuery(
+      "SELECT id, nome, usuario, tipo FROM professores ORDER BY id DESC"
+    );
+    res.json(professores);
+  } catch (e) {
+    console.error("Erro ao buscar professores:", e);
+    res.status(500).json({ erro: "Erro ao buscar professores" });
+  }
+});
+
+app.post("/api/professores", autenticar, async (req, res) => {
+  if (req.user.tipo !== "master") {
+    return res.status(403).json({ erro: "Acesso negado" });
+  }
+
+  const { nome, usuario, senha } = req.body;
+  if (!nome || !usuario || !senha) {
+    return res.status(400).json({ erro: "Preencha todos os campos" });
+  }
+
+  try {
+    const hash = bcrypt.hashSync(senha, 10);
+    await dbQuery(
+      `INSERT INTO professores (nome, usuario, senha, tipo)
+       VALUES ($1, $2, $3, 'professor')`,
+      [nome, usuario, hash]
+    );
+    await registrarLog(req.user.id, "Cadastro de professor", nome);
+    res.json({ sucesso: true, mensagem: "Professor cadastrado com sucesso" });
+  } catch (e) {
+    if (e.code === "23505") {
+      return res.status(400).json({ erro: "Usuário já existe" });
+    }
+    console.error(e);
+    res.status(500).json({ erro: "Erro ao cadastrar professor" });
+  }
+});
+
+app.delete("/api/professores/:id", autenticar, async (req, res) => {
+  if (req.user.tipo !== "master") {
+    return res.status(403).json({ erro: "Acesso negado" });
+  }
+
+  const { id } = req.params;
+
+  try {
+    await dbQuery("DELETE FROM professores WHERE id = $1", [id]);
+    await registrarLog(req.user.id, "Exclusão de professor", `ID ${id}`);
+    res.json({ sucesso: true, mensagem: "Professor excluído com sucesso." });
+  } catch (e) {
+    console.error("Erro ao excluir professor:", e);
+    res.status(500).json({ erro: "Erro ao excluir professor." });
   }
 });
 
@@ -281,36 +344,36 @@ app.get("/api/logs/recentes", autenticar, async (req, res) => {
   }
 });
 
-// ==================== BACKUP AUTOMÁTICO ====================
+// ==================== BACKUPS ====================
 const backupDir = path.resolve("./backups");
 if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
 
-async function gerarBackupZip() {
-  const agora = new Date();
-  const dataFormatada = agora.toISOString().replace(/[:.]/g, "-");
-  const nomeArquivo = `backup_${dataFormatada}.zip`;
-  const caminhoFinal = path.join(backupDir, nomeArquivo);
+app.get("/api/backup/geral", autenticar, async (req, res) => {
+  if (req.user.tipo !== "master") return res.status(403).json({ erro: "Acesso negado" });
 
-  return new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(caminhoFinal);
+  try {
+    const nomeZip = `backup_geral_${new Date().toISOString().split("T")[0]}.zip`;
+    const caminhoZip = path.join(backupDir, nomeZip);
+    const output = fs.createWriteStream(caminhoZip);
     const archive = archiver("zip", { zlib: { level: 9 } });
-
-    output.on("close", () => {
-      console.log(`[Backup] Gerado: ${nomeArquivo} (${archive.pointer()} bytes)`);
-      resolve(caminhoFinal);
-    });
-
-    archive.on("error", (err) => reject(err));
     archive.pipe(output);
     archive.directory(uploadDir, false);
     archive.finalize();
-  });
-}
+    output.on("close", async () => {
+      await registrarLog(req.user.id, "Backup geral completo", nomeZip);
+      res.download(caminhoZip, nomeZip);
+    });
+  } catch (err) {
+    console.error("Erro no backup geral:", err);
+    res.status(500).json({ erro: "Erro ao gerar backup." });
+  }
+});
 
+// ==================== BACKUP AUTOMÁTICO (CRON) ====================
 cron.schedule("0 2 * * *", async () => {
   console.log("[Backup] Gerando ZIP automático às 2h...");
   try {
-    await gerarBackupZip();
+    await registrarLog(null, "Backup automático diário");
   } catch (err) {
     console.error("[Backup] Erro ao gerar ZIP:", err);
   }
