@@ -15,9 +15,6 @@ const app = express();
 
 // ==================== CORS E CONFIGURAÇÕES ====================
 // ==================== CORS E CONFIGURAÇÕES ====================
-import cors from "cors";
-import express from "express";
-import path from "path";
 
 app.use(
   cors({
