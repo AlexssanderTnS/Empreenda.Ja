@@ -971,4 +971,26 @@ section.appinfo div img{
 
     }
 
+
+}
+
+
+.mensagem-login {
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mensagem-login.mostrar {
+  opacity: 1;
+}
+
+.mensagem-login.erro {
+  color: #d9534f; /* vermelho */
+}
+
+.mensagem-login.sucesso {
+  color: #28a745; /* verde */
 }
