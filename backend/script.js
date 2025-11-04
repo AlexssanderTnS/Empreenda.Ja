@@ -275,16 +275,16 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     fileFilter: (req, file, cb) => {
         console.log("📄 Arquivo recebido:", file.originalname, "Tipo:", file.mimetype);
-        
+
         // Aceita .xlsx e outros tipos de planilha Excel
         const allowedTypes = [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
             'application/vnd.ms-excel' // .xls
         ];
-        
+
         const allowedExtensions = ['.xlsx', '.xls'];
         const fileExt = path.extname(file.originalname || "").toLowerCase();
-        
+
         if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
             cb(null, true);
         } else {
@@ -365,69 +365,84 @@ app.post("/api/frequencia/upload", autenticar, (req, res, next) => {
         }
 
         console.log("✅ Arquivo recebido:", req.file.filename);
-        console.log("📁 Caminho:", req.file.path);
-        console.log("👤 Professor ID:", req.user.id);
-        console.log("👤 Professor Nome:", req.user.nome);
+        console.log("👤 Professor ID:", req.user.id, "Nome:", req.user.nome);
 
         try {
             const nomeArquivo = req.file.filename;
             const dataHoje = new Date().toISOString().split("T")[0];
 
-            console.log("💾 ========== SALVANDO NO BANCO ==========");
-            console.log("📝 Dados para inserção:", {
-                professor_id: req.user.id,
-                curso: "—",
-                local: "—", 
-                turma: "—",
-                data: dataHoje,
-                alunos: nomeArquivo
-            });
+            console.log("💾 ========== INICIANDO PROCESSO DE SALVAMENTO ==========");
 
-            // Primeiro, teste o registro de log
-            console.log("📋 Tentando registrar log...");
+            // PASSO 1: Verificar se o professor existe
+            console.log("🔍 PASSO 1: Verificando professor...");
+            const professor = await dbQuery("SELECT id, nome FROM professores WHERE id = $1", [req.user.id]);
+            if (professor.length === 0) {
+                console.error("❌ Professor não encontrado com ID:", req.user.id);
+                return res.status(400).json({ erro: "Professor não encontrado no sistema." });
+            }
+            console.log("✅ Professor encontrado:", professor[0].nome);
+
+            // PASSO 2: Registrar log (já sabemos que funciona)
+            console.log("📋 PASSO 2: Registrando log...");
             await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
-            console.log("✅ Log registrado com sucesso");
+            console.log("✅ Log registrado");
 
-            // Agora tente inserir na frequencia
-            console.log("🗄️ Tentando inserir na tabela frequencias...");
-            const result = await dbQuery(
-                `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-                 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-                [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
-            );
+            // PASSO 3: Testar INSERT simples primeiro
+            console.log("🗄️ PASSO 3: Testando INSERT na frequencias...");
 
-            console.log("✅ Frequência salva com ID:", result[0].id);
-            console.log("🎉 ========== UPLOAD CONCLUÍDO ==========");
-            res.json({ sucesso: true, arquivo: nomeArquivo });
+            // Primeiro teste: valores mínimos
+            console.log("🧪 Teste 1: INSERT com valores básicos");
+            try {
+                const testResult = await dbQuery(
+                    `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos) 
+                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+                    [req.user.id, "Teste", "Teste", "Teste", dataHoje, "teste.txt"]
+                );
+                console.log("✅ INSERT teste funcionou! ID:", testResult[0].id);
+
+                // Agora tente com os dados reais
+                console.log("🎯 Tentando INSERT com dados reais...");
+                const realResult = await dbQuery(
+                    `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos) 
+                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+                    [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+                );
+
+                console.log("✅ Frequência salva com ID:", realResult[0].id);
+                console.log("🎉 ========== UPLOAD CONCLUÍDO COM SUCESSO ==========");
+                res.json({ sucesso: true, arquivo: nomeArquivo, id: realResult[0].id });
+
+            } catch (testError) {
+                console.error("❌ ERRO NO INSERT TESTE:");
+                console.error("📌 Mensagem:", testError.message);
+                console.error("📌 Código:", testError.code);
+                console.error("📌 Detalhe:", testError.detail);
+                console.error("📌 Query:", testError.query);
+
+                // Se o teste falhar, tente um INSERT alternativo
+                console.log("🔄 Tentando INSERT alternativo...");
+                try {
+                    const altResult = await dbQuery(
+                        `INSERT INTO frequencias (professor_id, data, alunos) 
+                            VALUES ($1, $2, $3) RETURNING id`,
+                        [req.user.id, dataHoje, nomeArquivo]
+                    );
+                    console.log("✅ INSERT alternativo funcionou! ID:", altResult[0].id);
+                    res.json({ sucesso: true, arquivo: nomeArquivo, id: altResult[0].id });
+                } catch (altError) {
+                    console.error("❌ INSERT alternativo também falhou:");
+                    console.error("📌 Mensagem:", altError.message);
+                    throw altError;
+                }
+            }
 
         } catch (erro) {
-            console.error("❌ ========== ERRO DETALHADO ==========");
+            console.error("❌ ========== ERRO CRÍTICO ==========");
             console.error("📌 Mensagem:", erro.message);
             console.error("📌 Código:", erro.code);
             console.error("📌 Detalhe:", erro.detail);
-            console.error("📌 Query:", erro.query);
-            console.error("📌 Parameters:", erro.parameters);
-            console.error("📌 Stack:", erro.stack);
-            
-            // Verificar se é problema de foreign key
-            if (erro.code === '23503') {
-                console.error("🔗 ERRO DE FOREIGN KEY - Professor não existe");
-                return res.status(500).json({ 
-                    erro: "Professor não encontrado no sistema.",
-                    detalhe: "ID do professor inválido"
-                });
-            }
-            
-            // Verificar se é problema de constraint
-            if (erro.code === '23502') {
-                console.error("🚫 ERRO DE NOT NULL - Campo obrigatório faltando");
-                return res.status(500).json({ 
-                    erro: "Dados incompletos para salvar frequência.",
-                    detalhe: "Campo obrigatório não preenchido"
-                });
-            }
-            
-            res.status(500).json({ 
+
+            res.status(500).json({
                 erro: "Erro ao salvar frequência no banco.",
                 detalhe: erro.message,
                 codigo: erro.code
@@ -436,6 +451,27 @@ app.post("/api/frequencia/upload", autenticar, (req, res, next) => {
     });
 });
 
+
+// Rota de diagnóstico sem autenticação para teste rápido
+app.get("/api/debug/tables-simple", async (req, res) => {
+    try {
+        const columns = await dbQuery(`
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns 
+            WHERE table_name = 'frequencias'
+            ORDER BY ordinal_position
+        `);
+        
+        res.json({
+            tabela_frequencias: {
+                colunas: columns,
+                total: (await dbQuery(`SELECT COUNT(*) as total FROM frequencias`))[0].total
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ erro: err.message });
+    }
+});
 
 // Rota temporária para diagnóstico - remover depois
 app.get("/api/debug/frequencias", autenticar, async (req, res) => {
@@ -447,17 +483,17 @@ app.get("/api/debug/frequencias", autenticar, async (req, res) => {
             WHERE table_name = 'frequencias'
             ORDER BY ordinal_position
         `);
-        
+
         // Verificar constraints
         const constraints = await dbQuery(`
             SELECT constraint_name, constraint_type 
             FROM information_schema.table_constraints 
             WHERE table_name = 'frequencias'
         `);
-        
+
         // Verificar professores existentes
         const professores = await dbQuery(`SELECT id, nome FROM professores`);
-        
+
         res.json({
             tabela_frequencias: {
                 colunas: columns,
