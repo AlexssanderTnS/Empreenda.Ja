@@ -228,7 +228,7 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
   try {
     if (!req.file) {
       return res.status(400).json({ erro: "Nenhum arquivo foi enviado." });
-    }
+    }//aaa
 
     // `multer` popula req.body *depois* de processar o arquivo
     const turma = req.body?.turma?.trim() || "—";
@@ -236,10 +236,11 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
     const dataHoje = new Date().toISOString().split("T")[0];
 
     await dbQuery(
-      `INSERT INTO frequencias (professor_id, turma, data, alunos)
-   VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO frequencias (professor_id, curso, data, alunos)
+      VALUES ($1, $2, $3, $4)`,
       [req.user.id, turma, dataHoje, nomeArquivo]
     );
+
 
 
     await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
