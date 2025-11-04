@@ -236,10 +236,10 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
     const dataHoje = new Date().toISOString().split("T")[0];
 
     await dbQuery(
-      `INSERT INTO frequencias (professor_id, curso, data, alunos)
-      VALUES ($1, $2, $3, $4)`,
-      [req.user.id, turma, dataHoje, nomeArquivo]
-    );
+  `INSERT INTO frequencias (professor_id, turma, data, alunos)
+  VALUES ($1, $2, $3, $4)`,
+  [req.user.id, turma, dataHoje, nomeArquivo]
+);
 
 
 
