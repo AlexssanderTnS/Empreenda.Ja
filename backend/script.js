@@ -17,8 +17,8 @@ const app = express();
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app",
-            "http://localhost:5500"
+            "https://empreenda-ja.vercel.app", // seu site na Vercel
+            "http://localhost:5500"            // para testes locais
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -26,15 +26,14 @@ app.use(
     })
 );
 
-
+// Garante que o pré-flight OPTIONS receba resposta
 app.options("*", cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.resolve("./uploads")));
-
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const SECRET = process.env.JWT_SECRET || "0000";
 
-
+// ====== CONEXÃO COM POSTGRESQL ======
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -48,71 +47,88 @@ async function dbQuery(sql, params = []) {
 
 
 
-
+// ====== SEED INICIAL ======
 async function seed() {
     const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
     const senhaProf = bcrypt.hashSync("senhaprof123", 10);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS professores (
-    id SERIAL PRIMARY KEY,
-    nome TEXT NOT NULL,
-    usuario TEXT UNIQUE NOT NULL,
-    senha TEXT NOT NULL,
-    tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
+      id SERIAL PRIMARY KEY,
+      nome TEXT NOT NULL,
+      usuario TEXT UNIQUE NOT NULL,
+      senha TEXT NOT NULL,
+      tipo TEXT CHECK (tipo IN ('professor', 'master')) NOT NULL DEFAULT 'professor'
     );
-`);
+  `);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS logs (
-    id SERIAL PRIMARY KEY,
-    professor_id INTEGER REFERENCES professores(id),
-    acao TEXT NOT NULL,
-    detalhe TEXT,
-    data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      professor_id INTEGER REFERENCES professores(id),
+      acao TEXT NOT NULL,
+      detalhe TEXT,
+      data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-`);
+  `);
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS frequencias (
-    id SERIAL PRIMARY KEY,
-    professor_id INTEGER NOT NULL,
-    curso TEXT NOT NULL,
-    local TEXT NOT NULL,
-    turma TEXT NOT NULL,
-    data TEXT NOT NULL,
-    alunos TEXT NOT NULL,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      professor_id INTEGER NOT NULL,
+      curso TEXT NOT NULL,
+      local TEXT NOT NULL,
+      turma TEXT NOT NULL,
+      data TEXT NOT NULL,
+      alunos TEXT NOT NULL,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
-`);
+  `);
 
     await pool.query(`
     ALTER TABLE professores 
     ADD COLUMN IF NOT EXISTS precisa_trocar_senha BOOLEAN DEFAULT TRUE;
-`);
+  `);
 
     // ===== INSERÇÃO DE USUÁRIOS PADRÃO =====
     await pool.query(
         `INSERT INTO professores (nome, usuario, senha, tipo)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (usuario) DO NOTHING`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
         ["Administrador", "master", senhaMaster, "master"]
     );
 
+    await pool.query(
+        `INSERT INTO professores (nome, usuario, senha, tipo)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
+        ["Prof. Maria", "maria", senhaProf, "professor"]
+    );
 
+    await pool.query(
+        `INSERT INTO professores (nome, usuario, senha, tipo)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (usuario) DO NOTHING`,
+        ["Prof. João", "joao", senhaProf, "professor"]
+    );
+
+
+    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
+    // ===== AJUSTE DE RELAÇÃO PROFESSORES → FREQUENCIAS =====
     try {
-
+        // Permite NULL em professor_id
         await pool.query(`
     ALTER TABLE frequencias
     ALTER COLUMN professor_id DROP NOT NULL;
-`);
+  `);
 
+        // 🔹 Corrige dados órfãos antes de recriar a constraint
         await pool.query(`
     UPDATE frequencias
     SET professor_id = NULL
     WHERE professor_id IS NOT NULL
     AND professor_id NOT IN (SELECT id FROM professores);
-`);
+  `);
 
         // 🔹 Remove TODAS as foreign keys antigas
         const oldConstraints = await pool.query(`
@@ -120,7 +136,7 @@ async function seed() {
     FROM information_schema.table_constraints
     WHERE table_name = 'frequencias'
     AND constraint_type = 'FOREIGN KEY';
-`);
+  `);
 
         for (const c of oldConstraints.rows) {
             await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS ${c.constraint_name};`);
@@ -133,11 +149,11 @@ async function seed() {
     FOREIGN KEY (professor_id)
     REFERENCES professores(id)
     ON DELETE SET NULL;
-`);
+  `);
 
-        console.log("Relação professor-frequências corrigida e garantida (ON DELETE SET NULL).");
+        console.log("🧩 Relação professor-frequências corrigida e garantida (ON DELETE SET NULL).");
     } catch (err) {
-        console.error(" Erro ao ajustar relação frequencias-professores:", err);
+        console.error("⚠️ Erro ao ajustar relação frequencias-professores:", err);
     }
 
 
@@ -161,9 +177,9 @@ async function seed() {
             ON DELETE SET NULL;
     `);
 
-        console.log(" Relação professor-logs ajustada (ON DELETE SET NULL).");
+        console.log("🧩 Relação professor-logs ajustada (ON DELETE SET NULL).");
     } catch (err) {
-        console.error(" Erro ao ajustar logs-professores:", err);
+        console.error("⚠️ Erro ao ajustar logs-professores:", err);
     }
 }
 
@@ -227,7 +243,7 @@ app.post("/api/login", async (req, res) => {
             token,
             nome: user.nome,
             tipo: user.tipo,
-            precisaTrocar: user.precisa_trocar_senha
+            precisaTrocar: user.precisa_trocar_senha // 👈 envia pro frontend
         });
 
     } catch (e) {
@@ -236,66 +252,41 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-// --- Upload seguro (com validações e logs) ---
-const uploadDir = path.resolve("./uploads/frequencias");
-fs.mkdirSync(uploadDir, { recursive: true });
 
+
+
+// ====== CONFIGURAÇÃO DO UPLOAD (MULTER) ======
+
+// Cria pasta se não existir
+const uploadDir = "./uploads/frequencias";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Define como o arquivo será salvo
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
-        // Proteção: se o token falhar, não derruba o servidor
-        if (!req.user || !req.user.nome) {
-            console.error("❌ Falha no upload: req.user ausente ou inválido.");
-            return cb(new Error("USUARIO_NAO_AUTENTICADO"));
-        }
+        const ext = path.extname(file.originalname);
 
-        const ext = path.extname(file.originalname || "").toLowerCase();
-        // Apenas .xlsx (ajuste se aceitar outros)
-        if (ext !== ".xlsx") {
-            return cb(new Error("TIPO_INVALIDO"));
-        }
-
-        const nomeProf = String(req.user.nome)
-            .replace(/\s+/g, "_")
-            .normalize("NFD")
+        // Nome do professor tratado
+        const nomeProf = req.user.nome
+            .replace(/\s+/g, "_")       // troca espaços por "_"
+            .normalize("NFD")           // remove acentos
             .replace(/[\u0300-\u036f]/g, "");
 
+        // Data formatada dd_mm_aaaa
         const agora = new Date();
         const dia = String(agora.getDate()).padStart(2, "0");
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
         const ano = agora.getFullYear();
+
+
 
         const nomeArquivo = `Prof.${nomeProf}_${dia}_${mes}_${ano}${ext}`;
         cb(null, nomeArquivo);
     },
 });
 
-const upload = multer({
-    storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-    fileFilter: (req, file, cb) => {
-        console.log("📄 Arquivo recebido:", file.originalname, "Tipo:", file.mimetype);
-
-        // Aceita .xlsx e outros tipos de planilha Excel
-        const allowedTypes = [
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-            'application/vnd.ms-excel' // .xls
-        ];
-
-        const allowedExtensions = ['.xlsx', '.xls'];
-        const fileExt = path.extname(file.originalname || "").toLowerCase();
-
-        if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
-            cb(null, true);
-        } else {
-            console.log("❌ Tipo de arquivo rejeitado:", file.mimetype, fileExt);
-            cb(new Error("TIPO_INVALIDO"));
-        }
-    },
-});
-
-
-
+// ===== ALTERAR SENHA =====
 app.put("/api/alterar-senha", autenticar, async (req, res) => {
     const { senhaAtual, novaSenha } = req.body;
     if (!senhaAtual || !novaSenha) {
@@ -312,7 +303,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
         const senhaCorreta = bcrypt.compareSync(senhaAtual, user.senha);
         if (!senhaCorreta) return res.status(401).json({ erro: "Senha atual incorreta." });
 
-
+        // Atualiza no banco + marca que não precisa mais trocar
         const novaHash = bcrypt.hashSync(novaSenha, 10);
         await dbQuery(`
             UPDATE professores 
@@ -330,9 +321,9 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
 
 
 
+const upload = multer({ storage });
 
-
-
+// ====== ROTA 1: Download do modelo da ata ======
 app.get("/api/frequencia/modelo", autenticar, (req, res) => {
     const modeloPath = path.resolve("./Planilha.xlsx");
     if (fs.existsSync(modeloPath)) {
@@ -344,176 +335,36 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 
-app.post("/api/frequencia/upload", autenticar, (req, res, next) => {
-    upload.single("arquivo")(req, res, async (err) => {
-        console.log("📤 ========== INICIANDO UPLOAD ==========");
-
-        if (err) {
-            console.error("❌ Erro no multer:", err.message);
-            if (err.message === "TIPO_INVALIDO") {
-                return res.status(400).json({ erro: "Formato inválido. Envie um arquivo .xlsx." });
-            }
-            if (err.message === "USUARIO_NAO_AUTENTICADO") {
-                return res.status(401).json({ erro: "Usuário não autenticado." });
-            }
-            return res.status(500).json({ erro: "Erro no upload: " + err.message });
-        }
-
-        if (!req.file) {
-            console.log("❌ Nenhum arquivo recebido");
-            return res.status(400).json({ erro: "Nenhum arquivo enviado." });
-        }
-
-        console.log("✅ Arquivo recebido:", req.file.filename);
-        console.log("👤 Professor ID:", req.user.id, "Nome:", req.user.nome);
-
-        try {
-            const nomeArquivo = req.file.filename;
-            const dataHoje = new Date().toISOString().split("T")[0];
-
-            console.log("💾 ========== INICIANDO PROCESSO DE SALVAMENTO ==========");
-
-            // PASSO 1: Verificar se o professor existe
-            console.log("🔍 PASSO 1: Verificando professor...");
-            const professor = await dbQuery("SELECT id, nome FROM professores WHERE id = $1", [req.user.id]);
-            if (professor.length === 0) {
-                console.error("❌ Professor não encontrado com ID:", req.user.id);
-                return res.status(400).json({ erro: "Professor não encontrado no sistema." });
-            }
-            console.log("✅ Professor encontrado:", professor[0].nome);
-
-            // PASSO 2: Registrar log (já sabemos que funciona)
-            console.log("📋 PASSO 2: Registrando log...");
-            await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
-            console.log("✅ Log registrado");
-
-            // PASSO 3: Testar INSERT simples primeiro
-            console.log("🗄️ PASSO 3: Testando INSERT na frequencias...");
-
-            // Primeiro teste: valores mínimos
-            console.log("🧪 Teste 1: INSERT com valores básicos");
-            try {
-                const testResult = await dbQuery(
-                    `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos) 
-                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-                    [req.user.id, "Teste", "Teste", "Teste", dataHoje, "teste.txt"]
-                );
-                console.log("✅ INSERT teste funcionou! ID:", testResult[0].id);
-
-                // Agora tente com os dados reais
-                console.log("🎯 Tentando INSERT com dados reais...");
-                const realResult = await dbQuery(
-                    `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos) 
-                     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-                    [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
-                );
-
-                console.log("✅ Frequência salva com ID:", realResult[0].id);
-                console.log("🎉 ========== UPLOAD CONCLUÍDO COM SUCESSO ==========");
-                res.json({ sucesso: true, arquivo: nomeArquivo, id: realResult[0].id });
-
-            } catch (testError) {
-                console.error("❌ ERRO NO INSERT TESTE:");
-                console.error("📌 Mensagem:", testError.message);
-                console.error("📌 Código:", testError.code);
-                console.error("📌 Detalhe:", testError.detail);
-                console.error("📌 Query:", testError.query);
-
-                // Se o teste falhar, tente um INSERT alternativo
-                console.log("🔄 Tentando INSERT alternativo...");
-                try {
-                    const altResult = await dbQuery(
-                        `INSERT INTO frequencias (professor_id, data, alunos) 
-                            VALUES ($1, $2, $3) RETURNING id`,
-                        [req.user.id, dataHoje, nomeArquivo]
-                    );
-                    console.log("✅ INSERT alternativo funcionou! ID:", altResult[0].id);
-                    res.json({ sucesso: true, arquivo: nomeArquivo, id: altResult[0].id });
-                } catch (altError) {
-                    console.error("❌ INSERT alternativo também falhou:");
-                    console.error("📌 Mensagem:", altError.message);
-                    throw altError;
-                }
-            }
-
-        } catch (erro) {
-            console.error("❌ ========== ERRO CRÍTICO ==========");
-            console.error("📌 Mensagem:", erro.message);
-            console.error("📌 Código:", erro.code);
-            console.error("📌 Detalhe:", erro.detail);
-
-            res.status(500).json({
-                erro: "Erro ao salvar frequência no banco.",
-                detalhe: erro.message,
-                codigo: erro.code
-            });
-        }
-    });
-});
-
-
-// Rota de diagnóstico sem autenticação para teste rápido
-app.get("/api/debug/tables-simple", async (req, res) => {
-    try {
-        const columns = await dbQuery(`
-            SELECT column_name, data_type, is_nullable
-            FROM information_schema.columns 
-            WHERE table_name = 'frequencias'
-            ORDER BY ordinal_position
-        `);
-        
-        res.json({
-            tabela_frequencias: {
-                colunas: columns,
-                total: (await dbQuery(`SELECT COUNT(*) as total FROM frequencias`))[0].total
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ erro: err.message });
+// ====== ROTA 2: Upload da planilha preenchida ======
+app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ erro: "Nenhum arquivo enviado." });
     }
-});
 
-// Rota temporária para diagnóstico - remover depois
-app.get("/api/debug/frequencias", autenticar, async (req, res) => {
     try {
-        // Verificar estrutura da tabela
-        const columns = await dbQuery(`
-            SELECT column_name, data_type, is_nullable, column_default
-            FROM information_schema.columns 
-            WHERE table_name = 'frequencias'
-            ORDER BY ordinal_position
-        `);
+        const nomeArquivo = req.file.filename;
+        const dataHoje = new Date().toISOString().split("T")[0];
+        await registrarLog(req.user.id, "Upload de frequência", req.file.filename);
 
-        // Verificar constraints
-        const constraints = await dbQuery(`
-            SELECT constraint_name, constraint_type 
-            FROM information_schema.table_constraints 
-            WHERE table_name = 'frequencias'
-        `);
 
-        // Verificar professores existentes
-        const professores = await dbQuery(`SELECT id, nome FROM professores`);
+        // Salva no banco: quem enviou, qual arquivo e a data
+        await dbQuery(
+            `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+        );
 
-        res.json({
-            tabela_frequencias: {
-                colunas: columns,
-                constraints: constraints,
-                total_registros: (await dbQuery(`SELECT COUNT(*) as total FROM frequencias`))[0].total
-            },
-            professores: professores,
-            usuario_atual: {
-                id: req.user.id,
-                nome: req.user.nome,
-                tipo: req.user.tipo
-            }
-        });
-    } catch (err) {
-        console.error("Erro no debug:", err);
-        res.status(500).json({ erro: err.message });
+        res.json({ sucesso: true, arquivo: nomeArquivo });
+    } catch (erro) {
+        console.error("Erro ao salvar upload:", erro);
+        res.status(500).json({ erro: "Erro ao salvar frequência." });
     }
+
 });
 
 
+
+// ====== ROTA 3: Listar envios do professor ======
 app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
     try {
         const linhas = await dbQuery(
@@ -531,7 +382,7 @@ app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
 });
 
 
-
+// Cadastro de professor (somente master)
 app.post("/api/professores", autenticar, async (req, res) => {
     if (req.user.tipo !== "master")
         return res.status(403).json({ erro: "Acesso negado" });
@@ -557,7 +408,7 @@ app.post("/api/professores", autenticar, async (req, res) => {
     }
 });
 
-
+// ===== EXCLUIR PROFESSOR (somente master) =====
 app.delete('/api/professores/:id', autenticar, async (req, res) => {
     if (req.user.tipo !== 'master') {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -577,7 +428,7 @@ app.delete('/api/professores/:id', autenticar, async (req, res) => {
 });
 
 
-
+// ===== LISTAR PROFESSORES (somente master) =====
 app.get('/api/professores/listar', autenticar, async (req, res) => {
     if (req.user.tipo !== 'master') {
         return res.status(403).json({ erro: 'Acesso negado' });
@@ -595,7 +446,7 @@ app.get('/api/professores/listar', autenticar, async (req, res) => {
 });
 
 
-
+// Lançar frequência
 app.post("/api/frequencia", autenticar, async (req, res) => {
     const { curso, local, turma, data, alunos } = req.body;
     if (!curso || !local || !turma || !data || !alunos)
@@ -614,7 +465,7 @@ app.post("/api/frequencia", autenticar, async (req, res) => {
     }
 });
 
-
+// Relatórios (somente master)
 app.get("/api/relatorios", autenticar, async (req, res) => {
     if (req.user.tipo !== "master")
         return res.status(403).json({ erro: "Acesso negado" });
@@ -688,7 +539,7 @@ async function gerarBackupZip() {
     });
 }
 
-
+// ===== CRON — A CADA 25 HORAS =====
 cron.schedule("0 */25 * * *", async () => {
     console.log("[Backup] Gerando ZIP automático...");
     try {
@@ -698,12 +549,12 @@ cron.schedule("0 */25 * * *", async () => {
     }
 });
 
-
+// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP =====
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
     await seed();
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
 
 app.get("/api/backup/hoje", autenticar, async (req, res) => {
@@ -766,7 +617,7 @@ app.get("/api/backup/hoje", autenticar, async (req, res) => {
     }
 });
 
-
+// ===== ROTA PARA DOWNLOAD DO ÚLTIMO BACKUP COMPLETO =====
 app.get("/api/backup/download", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -778,6 +629,7 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
             return res.status(404).json({ erro: "Pasta de backups não encontrada." });
         }
 
+        // Lista todos os .zip na pasta
         const arquivos = fs.readdirSync(backupDir)
             .filter(f => f.endsWith(".zip"))
             .sort((a, b) => {
@@ -797,7 +649,7 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
         console.log(`[Backup] Preparando download: ${maisRecente}`);
         await registrarLog(req.user.id, "Download de backup completo", maisRecente);
 
-
+        // Garante que o arquivo existe mesmo antes de tentar baixar
         if (!fs.existsSync(caminho)) {
             return res.status(404).json({ erro: "Arquivo de backup não encontrado." });
         }
@@ -816,7 +668,7 @@ app.get("/api/backup/download", autenticar, async (req, res) => {
     }
 });
 
-
+// ===== ROTA PARA BACKUP GERAL (TODOS OS RELATÓRIOS) =====
 app.get("/api/backup/geral", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -828,12 +680,12 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
 
         console.log(`[Backup geral] Criando arquivo com todos os relatórios...`);
 
-
+        // Cria o ZIP com tudo dentro da pasta uploads/frequencias/
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
         archive.pipe(output);
 
-        archive.directory(uploadsDir, false);
+        archive.directory(uploadsDir, false); // 👈 adiciona todos os arquivos existentes
         archive.finalize();
 
         output.on("close", async () => {
@@ -854,74 +706,51 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
     }
 });
 
-
-
-// --- Tratador global de erros (Express + Multer) ---
-app.use((err, req, res, next) => {
-    console.error("🔥 Erro global:", err && err.message, err && err.stack);
-
-    if (err.code === "LIMIT_FILE_SIZE") {
-        return res.status(413).json({ erro: "Arquivo grande demais (limite 10 MB)." });
-    }
-
-    if (err.message === "USUARIO_NAO_AUTENTICADO") {
-        return res.status(401).json({ erro: "Usuário não autenticado no upload." });
-    }
-
-    if (err.message === "TIPO_INVALIDO") {
-        return res.status(400).json({ erro: "Formato inválido. Envie um arquivo .xlsx." });
-    }
-
-    // fallback
-    return res.status(500).json({ erro: "Falha no upload." });
-});
-
-
-
+// ===== ROTA PARA RESETAR BANCO DE DADOS (somente master) =====
 app.post("/api/resetar-banco", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
     }
 
     try {
-        console.log("Solicitado reset completo do banco de dados pelo master...");
+        console.log("⚠️ Solicitado reset completo do banco de dados pelo master...");
 
-
+        // Remove constraints
         await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;`);
         await pool.query(`ALTER TABLE logs DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;`);
 
-
+        // Limpa tabelas
         await pool.query("TRUNCATE TABLE logs RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE frequencias RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE professores RESTART IDENTITY;");
 
-
+        // Recria o master
         const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
         await pool.query(`
-        INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
-        VALUES ('Administrador', 'master', $1, 'master', TRUE)
-        ON CONFLICT (usuario) DO UPDATE
-        SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
+      INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
+      VALUES ('Administrador', 'master', $1, 'master', TRUE)
+      ON CONFLICT (usuario) DO UPDATE
+      SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
     `, [senhaMaster]);
 
-
+        // Recria constraints
         await pool.query(`
-        ALTER TABLE frequencias
-        ADD CONSTRAINT frequencias_professor_id_fkey
-        FOREIGN KEY (professor_id)
-        REFERENCES professores(id)
-        ON DELETE SET NULL;
+      ALTER TABLE frequencias
+      ADD CONSTRAINT frequencias_professor_id_fkey
+      FOREIGN KEY (professor_id)
+      REFERENCES professores(id)
+      ON DELETE SET NULL;
     `);
 
         await pool.query(`
-        ALTER TABLE logs
-        ADD CONSTRAINT logs_professor_id_fkey
-        FOREIGN KEY (professor_id)
-        REFERENCES professores(id)
-        ON DELETE SET NULL;
+      ALTER TABLE logs
+      ADD CONSTRAINT logs_professor_id_fkey
+      FOREIGN KEY (professor_id)
+      REFERENCES professores(id)
+      ON DELETE SET NULL;
     `);
 
-        console.log("Banco resetado com sucesso via painel!");
+        console.log("✅ Banco resetado com sucesso via painel!");
         await registrarLog(req.user.id, "Reset completo do banco via painel");
 
         res.json({
@@ -930,7 +759,7 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Erro ao resetar banco via painel:", err);
+        console.error("❌ Erro ao resetar banco via painel:", err);
         res.status(500).json({ erro: "Erro interno ao resetar o banco de dados." });
     }
 });
