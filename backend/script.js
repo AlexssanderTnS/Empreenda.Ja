@@ -224,7 +224,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+app.post("/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ erro: "Nenhum arquivo foi enviado." });
