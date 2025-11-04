@@ -317,7 +317,9 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 
-app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+    app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+    console.log("[UPLOAD DEBUG] req.user =", req.user); // 👈 ADICIONE AQUI
+
     try {
         if (!req.file) {
             return res.status(400).json({ erro: "Nenhum arquivo enviado." });
