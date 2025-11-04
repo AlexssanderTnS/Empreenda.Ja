@@ -318,30 +318,51 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ erro: "Nenhum arquivo enviado." });
-    }
-
-    if (!req.user || !req.user.id) {
-        console.warn("[UPLOAD] Usuário sem ID no token:", req.user);
-        return res.status(401).json({ erro: "Token inválido. Faça login novamente." });
-    }
-
     try {
+        if (!req.file) {
+            return res.status(400).json({ erro: "Nenhum arquivo enviado." });
+        }
+
+        if (!req.user || !req.user.id) {
+            console.warn("[UPLOAD] Token inválido ou sem ID:", req.user);
+            return res.status(401).json({ erro: "Sessão expirada. Faça login novamente." });
+        }
+
         const nomeArquivo = req.file.filename;
         const dataHoje = new Date().toISOString().split("T")[0];
+
+        // Tenta inserir no banco
+        try {
+            await dbQuery(
+                `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+            );
+        } catch (e) {
+            console.error("[UPLOAD] Erro ao inserir na tabela frequencias:", e);
+            return res.status(500).json({ erro: "Erro ao registrar frequência no banco." });
+        }
+
         await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
-
-        await dbQuery(
-            `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-            [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
-        );
-
         res.json({ sucesso: true, arquivo: nomeArquivo });
+
     } catch (erro) {
-        console.error("Erro ao salvar upload:", erro);
-        res.status(500).json({ erro: "Erro ao salvar frequência." });
+        console.error("[UPLOAD] Erro inesperado:", erro);
+        res.status(500).json({ erro: "Erro interno ao processar upload." });
+    }
+});
+
+app.get("/debug/frequencias", async (req, res) => {
+    try {
+        const info = await pool.query(`
+      SELECT column_name, is_nullable, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'frequencias'
+    `);
+        res.json(info.rows);
+    } catch (err) {
+        console.error("Erro ao inspecionar tabela:", err);
+        res.status(500).json({ erro: "Falha ao inspecionar tabela frequencias" });
     }
 });
 
