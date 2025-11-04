@@ -17,8 +17,8 @@ const app = express();
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app", 
-            "http://localhost:5500"            
+            "https://empreenda-ja.vercel.app",
+            "http://localhost:5500"
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -29,7 +29,8 @@ app.use(
 
 app.options("*", cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/uploads", express.static(path.resolve("./uploads")));
+
 
 const SECRET = process.env.JWT_SECRET || "0000";
 
@@ -92,15 +93,15 @@ async function seed() {
 
     // ===== INSERÇÃO DE USUÁRIOS PADRÃO =====
     await pool.query(
-    `INSERT INTO professores (nome, usuario, senha, tipo)
+        `INSERT INTO professores (nome, usuario, senha, tipo)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (usuario) DO NOTHING`,
-    ["Administrador", "master", senhaMaster, "master"]
+        ["Administrador", "master", senhaMaster, "master"]
     );
 
 
     try {
-        
+
         await pool.query(`
     ALTER TABLE frequencias
     ALTER COLUMN professor_id DROP NOT NULL;
@@ -226,7 +227,7 @@ app.post("/api/login", async (req, res) => {
             token,
             nome: user.nome,
             tipo: user.tipo,
-            precisaTrocar: user.precisa_trocar_senha 
+            precisaTrocar: user.precisa_trocar_senha
         });
 
     } catch (e) {
@@ -235,37 +236,55 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-
-
-
-
-const uploadDir = "./uploads/frequencias";
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
+// --- Upload seguro (com validações e logs) ---
+const uploadDir = path.resolve("./uploads/frequencias");
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
+        // Proteção: se o token falhar, não derruba o servidor
+        if (!req.user || !req.user.nome) {
+            console.error("❌ Falha no upload: req.user ausente ou inválido.");
+            return cb(new Error("USUARIO_NAO_AUTENTICADO"));
+        }
 
-        
-        const nomeProf = req.user.nome
-            .replace(/\s+/g, "_")       
-            .normalize("NFD")           
+        const ext = path.extname(file.originalname || "").toLowerCase();
+        // Apenas .xlsx (ajuste se aceitar outros)
+        if (ext !== ".xlsx") {
+            return cb(new Error("TIPO_INVALIDO"));
+        }
+
+        const nomeProf = String(req.user.nome)
+            .replace(/\s+/g, "_")
+            .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "");
 
-        
         const agora = new Date();
         const dia = String(agora.getDate()).padStart(2, "0");
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
         const ano = agora.getFullYear();
 
-
-
         const nomeArquivo = `Prof.${nomeProf}_${dia}_${mes}_${ano}${ext}`;
         cb(null, nomeArquivo);
     },
 });
+
+    const upload = multer({
+        storage,
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    fileFilter: (req, file, cb) => {
+        // camada extra de validação
+        if (!file || !/\.xlsx$/i.test(file.originalname || "")) {
+            return cb(new Error("TIPO_INVALIDO"));
+        }
+        cb(null, true);
+    },
+});
+
+
+
+
 
 
 app.put("/api/alterar-senha", autenticar, async (req, res) => {
@@ -284,7 +303,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
         const senhaCorreta = bcrypt.compareSync(senhaAtual, user.senha);
         if (!senhaCorreta) return res.status(401).json({ erro: "Senha atual incorreta." });
 
-        
+
         const novaHash = bcrypt.hashSync(novaSenha, 10);
         await dbQuery(`
             UPDATE professores 
@@ -302,7 +321,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
 
 
 
-const upload = multer({ storage });
+
 
 
 app.get("/api/frequencia/modelo", autenticar, (req, res) => {
@@ -316,32 +335,34 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 
+app.post("/api/frequencia/upload", autenticar, (req, res, next) => {
+    upload.single("arquivo")(req, res, async (err) => {
+        if (err) return next(err); // deixa o handler global resolver
 
-app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ erro: "Nenhum arquivo enviado." });
-    }
+        if (!req.file) {
+            return res.status(400).json({ erro: "Nenhum arquivo enviado." });
+        }
 
-    try {
-        const nomeArquivo = req.file.filename;
-        const dataHoje = new Date().toISOString().split("T")[0];
-        await registrarLog(req.user.id, "Upload de frequência", req.file.filename);
+        try {
+            const nomeArquivo = req.file.filename;
+            const dataHoje = new Date().toISOString().split("T")[0];
 
+            await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
 
-    
-        await dbQuery(
-            `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-            [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
-        );
+            await dbQuery(
+                `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+                [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+            );
 
-        res.json({ sucesso: true, arquivo: nomeArquivo });
-    } catch (erro) {
-        console.error("Erro ao salvar upload:", erro);
-        res.status(500).json({ erro: "Erro ao salvar frequência." });
-    }
-
+            res.json({ sucesso: true, arquivo: nomeArquivo });
+        } catch (erro) {
+            console.error("Erro ao salvar upload:", erro);
+            res.status(500).json({ erro: "Erro ao salvar frequência." });
+        }
+    });
 });
+
 
 
 
@@ -660,12 +681,12 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
 
         console.log(`[Backup geral] Criando arquivo com todos os relatórios...`);
 
-        
+
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
         archive.pipe(output);
 
-        archive.directory(uploadsDir, false); 
+        archive.directory(uploadsDir, false);
         archive.finalize();
 
         output.on("close", async () => {
@@ -687,6 +708,29 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
 });
 
 
+
+// --- Tratador global de erros (Express + Multer) ---
+app.use((err, req, res, next) => {
+    console.error("🔥 Erro global:", err && err.message, err && err.stack);
+
+    if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({ erro: "Arquivo grande demais (limite 10 MB)." });
+    }
+
+    if (err.message === "USUARIO_NAO_AUTENTICADO") {
+        return res.status(401).json({ erro: "Usuário não autenticado no upload." });
+    }
+
+    if (err.message === "TIPO_INVALIDO") {
+        return res.status(400).json({ erro: "Formato inválido. Envie um arquivo .xlsx." });
+    }
+
+    // fallback
+    return res.status(500).json({ erro: "Falha no upload." });
+});
+
+
+
 app.post("/api/resetar-banco", autenticar, async (req, res) => {
     if (req.user.tipo !== "master") {
         return res.status(403).json({ erro: "Acesso negado" });
@@ -695,16 +739,16 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
     try {
         console.log("Solicitado reset completo do banco de dados pelo master...");
 
-        
+
         await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;`);
         await pool.query(`ALTER TABLE logs DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;`);
 
-        
+
         await pool.query("TRUNCATE TABLE logs RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE frequencias RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE professores RESTART IDENTITY;");
 
-       
+
         const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
         await pool.query(`
         INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
@@ -713,7 +757,7 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
         SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
     `, [senhaMaster]);
 
-    
+
         await pool.query(`
         ALTER TABLE frequencias
         ADD CONSTRAINT frequencias_professor_id_fkey
