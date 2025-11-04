@@ -5,16 +5,47 @@ if (!token) {
     window.location.href = "index.html";
 }
 
+// ==================== FUNÇÕES ====================
+async function carregarEnvios() {
+    try {
+        const token = localStorage.getItem("token");
+        const resp = await fetch(`${API_URL}/api/minhas-frequencias`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
+        const dados = await resp.json();
+        const tbody = document.getElementById("lista-envios");
 
-// Sair
-document.getElementById("logout").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("precisaTrocar");
-    window.location.href = "index.html";
-});
+        if (!resp.ok || !Array.isArray(dados) || dados.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='2'>Nenhum envio registrado.</td></tr>";
+            return;
+        }
 
+        tbody.innerHTML = dados
+            .map(
+                (f) => `
+        <tr>
+          <td>${f.data}</td>
+          <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
+        </tr>`
+            )
+            .join("");
+    } catch (erro) {
+        console.error(erro);
+        document.getElementById("lista-envios").innerHTML =
+            "<tr><td colspan='2'>Erro ao carregar.</td></tr>";
+    }
+}
+
+// ==================== EVENT LISTENERS ====================
 document.addEventListener("DOMContentLoaded", () => {
+    // Sair
+    document.getElementById("logout").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("precisaTrocar");
+        window.location.href = "index.html";
+    });
+
     // 1) Leia a flag do localStorage
     const precisaTrocarLS = localStorage.getItem("precisaTrocar") === "true";
 
@@ -129,6 +160,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const arquivo = document.getElementById("arquivo").files[0];
             if (!arquivo) return alert("Selecione uma planilha antes de enviar.");
 
+            console.log("📤 Enviando arquivo:", arquivo.name, "Tipo:", arquivo.type);
+
             const formData = new FormData();
             formData.append("arquivo", arquivo);
 
@@ -140,6 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const dados = await resp.json();
+                console.log("📥 Resposta do servidor:", dados);
+
                 if (resp.ok) {
                     alert("✅ Enviado com sucesso!");
                     carregarEnvios();
@@ -147,45 +182,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert("⚠️ " + (dados.erro || "Erro ao enviar arquivo."));
                 }
             } catch (erro) {
-                console.error(erro);
+                console.error("❌ Erro de comunicação:", erro);
                 alert("Erro de comunicação com o servidor.");
             }
         });
     }
 
+    // Carregar envios ao inicializar a página
     carregarEnvios();
 });
-
-// ==================== LISTAR ENVIOS ====================
-async function carregarEnvios() {
-    try {
-        const token = localStorage.getItem("token");
-        const resp = await fetch(`${API_URL}/api/minhas-frequencias`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const dados = await resp.json();
-        const tbody = document.getElementById("lista-envios");
-
-        if (!resp.ok || !Array.isArray(dados) || dados.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='2'>Nenhum envio registrado.</td></tr>";
-            return;
-        }
-
-        tbody.innerHTML = dados
-            .map(
-                (f) => `
-        <tr>
-          <td>${f.data}</td>
-          <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
-        </tr>`
-            )
-            .join("");
-    } catch (erro) {
-        console.error(erro);
-        document.getElementById("lista-envios").innerHTML =
-            "<tr><td colspan='2'>Erro ao carregar.</td></tr>";
-    }
-
-}
-

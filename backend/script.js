@@ -270,20 +270,29 @@ const storage = multer.diskStorage({
     },
 });
 
-    const upload = multer({
-        storage,
-        limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
     fileFilter: (req, file, cb) => {
-        // camada extra de validação
-        if (!file || !/\.xlsx$/i.test(file.originalname || "")) {
-            return cb(new Error("TIPO_INVALIDO"));
+        console.log("📄 Arquivo recebido:", file.originalname, "Tipo:", file.mimetype);
+        
+        // Aceita .xlsx e outros tipos de planilha Excel
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel' // .xls
+        ];
+        
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileExt = path.extname(file.originalname || "").toLowerCase();
+        
+        if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExt)) {
+            cb(null, true);
+        } else {
+            console.log("❌ Tipo de arquivo rejeitado:", file.mimetype, fileExt);
+            cb(new Error("TIPO_INVALIDO"));
         }
-        cb(null, true);
     },
 });
-
-
-
 
 
 
@@ -337,32 +346,50 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 app.post("/api/frequencia/upload", autenticar, (req, res, next) => {
     upload.single("arquivo")(req, res, async (err) => {
-        if (err) return next(err); // deixa o handler global resolver
+        console.log("📤 Iniciando upload...");
+
+        if (err) {
+            console.error("❌ Erro no multer:", err.message);
+            if (err.message === "TIPO_INVALIDO") {
+                return res.status(400).json({ erro: "Formato inválido. Envie um arquivo .xlsx." });
+            }
+            if (err.message === "USUARIO_NAO_AUTENTICADO") {
+                return res.status(401).json({ erro: "Usuário não autenticado." });
+            }
+            return res.status(500).json({ erro: "Erro no upload: " + err.message });
+        }
 
         if (!req.file) {
+            console.log("❌ Nenhum arquivo recebido");
             return res.status(400).json({ erro: "Nenhum arquivo enviado." });
         }
+
+        console.log("✅ Arquivo recebido:", req.file.filename);
+        console.log("📁 Caminho:", req.file.path);
 
         try {
             const nomeArquivo = req.file.filename;
             const dataHoje = new Date().toISOString().split("T")[0];
 
+            console.log("💾 Salvando no banco...");
+
             await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
 
-            await dbQuery(
+            const result = await dbQuery(
                 `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+                 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
                 [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
             );
 
+            console.log("✅ Frequência salva com ID:", result[0].id);
             res.json({ sucesso: true, arquivo: nomeArquivo });
+
         } catch (erro) {
-            console.error("Erro ao salvar upload:", erro);
-            res.status(500).json({ erro: "Erro ao salvar frequência." });
+            console.error("❌ Erro ao salvar no banco:", erro);
+            res.status(500).json({ erro: "Erro ao salvar frequência no banco." });
         }
     });
 });
-
 
 
 
