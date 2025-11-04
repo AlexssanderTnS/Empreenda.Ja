@@ -421,11 +421,49 @@ cron.schedule("0 2 * * *", async () => {
   }
 });
 
-// ==================== AJUSTE TEMPORÁRIO PARA RENOMEAR COLUNA ====================
+// ==================== AJUSTE DE ESTRUTURA DA TABELA ====================
 app.get("/ajustar-tabela-frequencias", async (req, res) => {
   try {
-    await dbQuery(`ALTER TABLE frequencias RENAME COLUMN curso TO turma;`);
-    res.send("✅ Coluna 'curso' renomeada para 'turma' com sucesso!");
+    // 1) Remove a coluna 'local' se ela existir
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'frequencias' AND column_name = 'local'
+        ) THEN
+          ALTER TABLE frequencias DROP COLUMN local;
+        END IF;
+      END $$;
+    `);
+
+    // 2) Renomeia 'curso' -> 'turma' se ainda não estiver renomeada
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'frequencias' AND column_name = 'curso'
+        ) THEN
+          ALTER TABLE frequencias RENAME COLUMN curso TO turma;
+        END IF;
+      END $$;
+    `);
+
+    // 3) Cria 'turma' se ainda não existir
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'frequencias' AND column_name = 'turma'
+        ) THEN
+          ALTER TABLE frequencias ADD COLUMN turma TEXT;
+        END IF;
+      END $$;
+    `);
+
+    res.send("✅ Estrutura da tabela ajustada com sucesso!");
   } catch (erro) {
     console.error("Erro ao ajustar tabela:", erro);
     res.status(500).send("❌ Erro ao ajustar tabela: " + erro.message);
