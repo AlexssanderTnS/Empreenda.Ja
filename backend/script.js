@@ -236,10 +236,11 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
     const dataHoje = new Date().toISOString().split("T")[0];
 
     await dbQuery(
-      `INSERT INTO frequencias (professor_id, professor_nome, turma, data, alunos)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [req.user.id, req.user.nome, turma, dataHoje, nomeArquivo]
+      `INSERT INTO frequencias (professor_id, turma, data, alunos)
+   VALUES ($1, $2, $3, $4)`,
+      [req.user.id, turma, dataHoje, nomeArquivo]
     );
+
 
     await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
     res.json({ sucesso: true, mensagem: "✅ Frequência salva com sucesso!" });
@@ -279,13 +280,14 @@ app.get("/api/relatorios", autenticar, async (req, res) => {
 
   try {
     const linhas = await dbQuery(`
-    SELECT 
+      SELECT 
         f.id,
-        f.professor_nome,
+        p.nome AS professor_nome,
         f.data,
         f.turma,
         f.alunos
       FROM frequencias f
+      LEFT JOIN professores p ON p.id = f.professor_id
       ORDER BY f.data DESC, f.id DESC
     `);
     res.json(linhas);
