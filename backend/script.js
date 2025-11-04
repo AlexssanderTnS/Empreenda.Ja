@@ -350,9 +350,10 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
         // Salva no banco: quem enviou, qual arquivo e a data
         await dbQuery(
             `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-            [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+                VALUES ($1, $2, $3, $4, $5, $6)`,
+            [req.user.id, "Nao informado", "Nao informado", "Nao informado", dataHoje, nomeArquivo]
         );
+
 
         res.json({ sucesso: true, arquivo: nomeArquivo });
     } catch (erro) {
