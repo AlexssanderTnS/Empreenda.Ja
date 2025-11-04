@@ -77,7 +77,6 @@ async function seed() {
     id SERIAL PRIMARY KEY,
     professor_id INTEGER NOT NULL,
     curso TEXT NOT NULL,
-    local TEXT NOT NULL,
     turma TEXT NOT NULL,
     data TEXT NOT NULL,
     alunos TEXT NOT NULL,
@@ -317,7 +316,7 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
 
 
 
-    app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
+app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (req, res) => {
     console.log("[UPLOAD DEBUG] req.user =", req.user); // 👈 ADICIONE AQUI
 
     try {
@@ -336,10 +335,11 @@ app.get("/api/frequencia/modelo", autenticar, (req, res) => {
         // Tenta inserir no banco
         try {
             await dbQuery(
-                `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [req.user.id, "—", "—", "—", dataHoje, nomeArquivo]
+                `INSERT INTO frequencias (professor_id, curso, turma, data, alunos)
+                VALUES ($1, $2, $3, $4, $5)`,
+                [req.user.id, "—", "—", dataHoje, nomeArquivo]
             );
+
         } catch (e) {
             console.error("[UPLOAD] Erro ao inserir na tabela frequencias:", e);
             return res.status(500).json({ erro: "Erro ao registrar frequência no banco." });
@@ -453,16 +453,18 @@ app.get('/api/professores/listar', autenticar, async (req, res) => {
 
 
 app.post("/api/frequencia", autenticar, async (req, res) => {
-    const { curso, local, turma, data, alunos } = req.body;
-    if (!curso || !local || !turma || !data || !alunos)
+    const { curso, turma, data, alunos } = req.body;
+    if (!curso || !turma || !data || !alunos)
         return res.status(400).json({ erro: "Preencha todos os campos obrigatórios" });
+
 
     try {
         await dbQuery(
-            `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-            [req.user.id, curso, local, turma, data, alunos]
+            `INSERT INTO frequencias (professor_id, curso, turma, data, alunos)
+            VALUES ($1, $2, $3, $4, $5)`,
+            [req.user.id, curso, turma, data, alunos]
         );
+
         res.json({ sucesso: true });
     } catch (e) {
         console.error(e);
