@@ -17,7 +17,7 @@ const app = express();
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app", // seu site na Vercel
+            "https://empreenda-ja.vercel.app", 
             "http://localhost:5500"            // para testes locais
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
