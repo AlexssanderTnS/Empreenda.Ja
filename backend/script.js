@@ -17,8 +17,8 @@ const app = express();
 app.use(
     cors({
         origin: [
-            "https://empreenda-ja.vercel.app", 
-            "http://localhost:5500"            
+            "https://empreenda-ja.vercel.app",
+            "http://localhost:5500"
         ],
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -92,15 +92,15 @@ async function seed() {
 
     // ===== INSERÇÃO DE USUÁRIOS PADRÃO =====
     await pool.query(
-    `INSERT INTO professores (nome, usuario, senha, tipo)
+        `INSERT INTO professores (nome, usuario, senha, tipo)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (usuario) DO NOTHING`,
-    ["Administrador", "master", senhaMaster, "master"]
+        ["Administrador", "master", senhaMaster, "master"]
     );
 
 
     try {
-        
+
         await pool.query(`
     ALTER TABLE frequencias
     ALTER COLUMN professor_id DROP NOT NULL;
@@ -226,7 +226,7 @@ app.post("/api/login", async (req, res) => {
             token,
             nome: user.nome,
             tipo: user.tipo,
-            precisaTrocar: user.precisa_trocar_senha 
+            precisaTrocar: user.precisa_trocar_senha
         });
 
     } catch (e) {
@@ -248,13 +248,13 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
 
-        
+
         const nomeProf = req.user.nome
-            .replace(/\s+/g, "_")       
-            .normalize("NFD")           
+            .replace(/\s+/g, "_")
+            .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "");
 
-        
+
         const agora = new Date();
         const dia = String(agora.getDate()).padStart(2, "0");
         const mes = String(agora.getMonth() + 1).padStart(2, "0");
@@ -284,7 +284,7 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
         const senhaCorreta = bcrypt.compareSync(senhaAtual, user.senha);
         if (!senhaCorreta) return res.status(401).json({ erro: "Senha atual incorreta." });
 
-        
+
         const novaHash = bcrypt.hashSync(novaSenha, 10);
         await dbQuery(`
             UPDATE professores 
@@ -322,13 +322,16 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
         return res.status(400).json({ erro: "Nenhum arquivo enviado." });
     }
 
+    if (!req.user || !req.user.id) {
+        console.warn("[UPLOAD] Usuário sem ID no token:", req.user);
+        return res.status(401).json({ erro: "Token inválido. Faça login novamente." });
+    }
+
     try {
         const nomeArquivo = req.file.filename;
         const dataHoje = new Date().toISOString().split("T")[0];
-        await registrarLog(req.user.id, "Upload de frequência", req.file.filename);
+        await registrarLog(req.user.id, "Upload de frequência", nomeArquivo);
 
-
-    
         await dbQuery(
             `INSERT INTO frequencias (professor_id, curso, local, turma, data, alunos)
             VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -340,7 +343,6 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
         console.error("Erro ao salvar upload:", erro);
         res.status(500).json({ erro: "Erro ao salvar frequência." });
     }
-
 });
 
 
@@ -349,10 +351,10 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
 app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
     try {
         const linhas = await dbQuery(
-            `SELECT id, data, alunos 
-            FROM frequencias 
-            WHERE professor_id = $1 
-            ORDER BY id DESC`,
+            `SELECT id, data, alunos AS arquivo
+             FROM frequencias 
+             WHERE professor_id = $1 
+             ORDER BY id DESC`,
             [req.user.id]
         );
         res.json(linhas);
@@ -361,7 +363,6 @@ app.get("/api/minhas-frequencias", autenticar, async (req, res) => {
         res.status(500).json({ erro: "Erro ao carregar envios." });
     }
 });
-
 
 
 app.post("/api/professores", autenticar, async (req, res) => {
@@ -660,12 +661,12 @@ app.get("/api/backup/geral", autenticar, async (req, res) => {
 
         console.log(`[Backup geral] Criando arquivo com todos os relatórios...`);
 
-        
+
         const output = fs.createWriteStream(caminhoZip);
         const archive = archiver("zip", { zlib: { level: 9 } });
         archive.pipe(output);
 
-        archive.directory(uploadsDir, false); 
+        archive.directory(uploadsDir, false);
         archive.finalize();
 
         output.on("close", async () => {
@@ -695,16 +696,16 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
     try {
         console.log("Solicitado reset completo do banco de dados pelo master...");
 
-        
+
         await pool.query(`ALTER TABLE frequencias DROP CONSTRAINT IF EXISTS frequencias_professor_id_fkey;`);
         await pool.query(`ALTER TABLE logs DROP CONSTRAINT IF EXISTS logs_professor_id_fkey;`);
 
-        
+
         await pool.query("TRUNCATE TABLE logs RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE frequencias RESTART IDENTITY;");
         await pool.query("TRUNCATE TABLE professores RESTART IDENTITY;");
 
-       
+
         const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
         await pool.query(`
         INSERT INTO professores (nome, usuario, senha, tipo, precisa_trocar_senha)
@@ -713,7 +714,7 @@ app.post("/api/resetar-banco", autenticar, async (req, res) => {
         SET senha = EXCLUDED.senha, tipo = 'master', precisa_trocar_senha = TRUE;
     `, [senhaMaster]);
 
-    
+
         await pool.query(`
         ALTER TABLE frequencias
         ADD CONSTRAINT frequencias_professor_id_fkey

@@ -173,14 +173,16 @@ async function carregarEnvios() {
         }
 
         tbody.innerHTML = dados
-            .map(
-                (f) => `
+        tbody.innerHTML = dados
+    .map(
+        (f) => `
         <tr>
           <td>${f.data}</td>
-          <td><a href="${API_URL}/uploads/frequencias/${f.alunos}" target="_blank">📂 ${f.alunos}</a></td>
+          <td><a href="${API_URL}/uploads/frequencias/${f.arquivo}" target="_blank">📂 ${f.arquivo}</a></td>
         </tr>`
-            )
-            .join("");
+    )
+    .join("");
+
     } catch (erro) {
         console.error(erro);
         document.getElementById("lista-envios").innerHTML =
