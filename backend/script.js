@@ -421,6 +421,20 @@ cron.schedule("0 2 * * *", async () => {
   }
 });
 
+// ==================== AJUSTE TEMPORÁRIO PARA RENOMEAR COLUNA ====================
+app.get("/ajustar-tabela-frequencias", async (req, res) => {
+  try {
+    await dbQuery(`ALTER TABLE frequencias RENAME COLUMN curso TO turma;`);
+    res.send("✅ Coluna 'curso' renomeada para 'turma' com sucesso!");
+  } catch (erro) {
+    console.error("Erro ao ajustar tabela:", erro);
+    res.status(500).send("❌ Erro ao ajustar tabela: " + erro.message);
+  }
+});
+
+
+
+
 // ==================== INÍCIO DO SERVIDOR ====================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", async () => {
