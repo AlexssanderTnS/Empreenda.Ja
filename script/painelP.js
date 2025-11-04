@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const payload = JSON.parse(atob(token.split(".")[1]));
     precisaTrocarJWT = !!payload.precisaTrocar;
     document.getElementById("bemvindo").innerText = `Bem-vindo(a), ${payload.nome || "Professor(a)"}!`;
-  } catch {}
+  } catch { }
 
   const precisaTrocar = precisaTrocarLS || precisaTrocarJWT;
 
@@ -74,6 +74,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // ===== DOWNLOAD DO MODELO DE PLANILHA =====
+  const btnModelo = document.getElementById("baixarModelo");
+  if (btnModelo) {
+    btnModelo.addEventListener("click", () => {
+      window.open(`${API_URL}/api/frequencia/modelo`, "_blank");
+    });
+  }
+
 
   // ===== UPLOAD DE FREQUÊNCIA =====
   const formUpload = document.getElementById("formUpload");

@@ -23,6 +23,7 @@ app.use(
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Content-Disposition"],
     credentials: true,
   })
 );
@@ -184,6 +185,27 @@ app.put("/api/alterar-senha", autenticar, async (req, res) => {
   }
 });
 
+
+// ==================== DOWNLOAD DO MODELO DE PLANILHA ====================
+app.get("/api/frequencia/modelo", (req, res) => {
+  const caminhoModelo = path.join(process.cwd(), "Planilha.xlsx");
+
+  // Verifica se o arquivo existe
+  if (!fs.existsSync(caminhoModelo)) {
+    return res.status(404).json({ erro: "Arquivo modelo não encontrado no servidor." });
+  }
+
+  res.download(caminhoModelo, "Planilha.xlsx", (erro) => {
+    if (erro) {
+      console.error("Erro ao enviar o modelo:", erro);
+      if (!res.headersSent) {
+        res.status(500).json({ erro: "Erro ao baixar o modelo." });
+      }
+    }
+  });
+});
+
+
 // ==================== UPLOAD DE FREQUÊNCIA ====================
 const uploadDir = path.join(process.cwd(), "uploads/frequencias");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -228,23 +250,7 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
 });
 
 
-// ==================== DOWNLOAD DO MODELO DE PLANILHA ====================
-app.get("/api/frequencia/modelo", autenticar, (req, res) => {
-  try {
-    const caminhoModelo = path.resolve("./Planilha.xlsx");
 
-    if (!fs.existsSync(caminhoModelo)) {
-      console.error("❌ Arquivo de modelo não encontrado em:", caminhoModelo);
-      return res.status(404).json({ erro: "Modelo de planilha não encontrado no servidor." });
-    }
-
-    console.log("📤 Enviando modelo:", caminhoModelo);
-    res.download(caminhoModelo, "Planilha.xlsx");
-  } catch (erro) {
-    console.error("Erro ao enviar modelo:", erro);
-    res.status(500).json({ erro: "Erro ao enviar modelo da planilha." });
-  }
-});
 
 
 
