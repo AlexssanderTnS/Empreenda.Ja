@@ -19,15 +19,22 @@
 
         <section class="acoes">
             <h3>Baixe a planilha, preencha e envie logo abaixo.</h3>
-            <button id="btnDownloadModelo" class="btn baixar">📥 Baixar Modelo da Planilha</button>
+            <button id="btnDownloadModelo" class="btn baixar">Baixar Modelo da Planilha</button>
         </section>
 
         <section class="upload">
             <h3>Enviar Planilha Preenchida</h3>
-            <form id="formUpload">
-                <input type="file" id="arquivo" accept=".xlsx" required>
-                <button type="submit" class="btn enviar">Enviar</button>
+            <form id="formUpload" enctype="multipart/form-data">
+                <label for="turma">Turma:</label>
+                <input type="text" id="turma" name="turma" class="form-control"
+                    placeholder="Ex: Turma A - Empreenda 2025" required>
+
+                <label for="arquivo">Selecione a planilha:</label>
+                <input type="file" id="arquivo" name="arquivo" accept=".xlsx,.xls" class="form-control" required>
+
+                <button type="submit" class="btn btn-primary mt-3">Enviar</button>
             </form>
+
         </section>
 
         <section class="historico">

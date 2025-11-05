@@ -334,11 +334,15 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
 
         // Tenta inserir no banco
         try {
+            const turma = req.body.turma || "—"; // 👈 pega turma enviada
+            const curso = "Empreenda Já"; // 👈 ou algum valor fixo, se quiser
+
             await dbQuery(
                 `INSERT INTO frequencias (professor_id, curso, turma, data, alunos)
-                VALUES ($1, $2, $3, $4, $5)`,
-                [req.user.id, "—", "—", dataHoje, nomeArquivo]
+                    VALUES ($1, $2, $3, $4, $5)`,
+                [req.user.id, curso, turma, dataHoje, nomeArquivo]
             );
+
 
 
         } catch (e) {

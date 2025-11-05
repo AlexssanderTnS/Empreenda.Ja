@@ -127,9 +127,12 @@ document.addEventListener("DOMContentLoaded", () => {
         formUpload.addEventListener("submit", async (e) => {
             e.preventDefault();
             const arquivo = document.getElementById("arquivo").files[0];
+            const turma = document.getElementById("turma").value.trim();
             if (!arquivo) return alert("Selecione uma planilha antes de enviar.");
+            if (!turma) return alert("Informe a turma antes de enviar.");
 
             const formData = new FormData();
+            formData.append("turma", turma);
             formData.append("arquivo", arquivo);
 
             try {
@@ -141,16 +144,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const dados = await resp.json();
                 if (resp.ok) {
-                    alert("✅ Enviado com sucesso!");
+                    alert("Enviado com sucesso!");
                     carregarEnvios();
                 } else {
-                    alert("⚠️ " + (dados.erro || "Erro ao enviar arquivo."));
+                    alert((dados.erro || "Erro ao enviar arquivo."));
                 }
             } catch (erro) {
                 console.error(erro);
                 alert("Erro de comunicação com o servidor.");
             }
         });
+
     }
 
     carregarEnvios();
@@ -174,14 +178,14 @@ async function carregarEnvios() {
 
         tbody.innerHTML = dados
         tbody.innerHTML = dados
-    .map(
-        (f) => `
+            .map(
+                (f) => `
         <tr>
           <td>${f.data}</td>
           <td><a href="${API_URL}/uploads/frequencias/${f.arquivo}" target="_blank">📂 ${f.arquivo}</a></td>
         </tr>`
-    )
-    .join("");
+            )
+            .join("");
 
     } catch (erro) {
         console.error(erro);

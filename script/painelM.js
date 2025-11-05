@@ -60,7 +60,7 @@
                 <td>${l.professor_nome}</td>
                 <td>${l.data}</td>
                 <td>${l.alunos ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">📥 Baixar</a>` : "—"}</td>
-                <td>${l.curso || "—"}</td>
+                <td>${l.turma || "—"}</td>
               </tr>`
             )
             .join("");
@@ -74,7 +74,7 @@
               <th>Professor</th>
               <th>Data do Envio</th>
               <th>Arquivo</th>
-              <th>Curso</th>
+              <th>Turma</th>
             </tr>
           </thead>
           <tbody>${linhas}</tbody>
