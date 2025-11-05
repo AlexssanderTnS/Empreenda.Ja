@@ -1,5 +1,3 @@
-// ==================== PAINEL MASTER COMPLETO ====================
-
 (function iniciarPainel() {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", iniciarPainel);
@@ -8,7 +6,7 @@
 
   console.log("Painel Master inicializado");
 
-  // ==================== CONFIGURAÇÕES ====================
+
   const API_URL = "https://empreenda-ja.onrender.com";
   const token = localStorage.getItem("token");
 
@@ -21,7 +19,6 @@
   const navItems = document.querySelectorAll(".nav-links li");
   if (!conteudo) return;
 
-  // ==================== VALIDAÇÃO DO TOKEN ====================
   async function validarToken() {
     try {
       const resp = await fetch(`${API_URL}/api/relatorios`, {
@@ -39,7 +36,6 @@
     }
   }
 
-  // ==================== RELATÓRIOS ====================
   async function carregarRelatorios() {
     const tokenValido = await validarToken();
     if (!tokenValido) return;
@@ -87,7 +83,6 @@
   }
 
 
-  // ==================== LISTAR PROFESSORES ====================
   async function carregarProfessores() {
     try {
       const resp = await fetch(`${API_URL}/api/professores/listar`, {
@@ -151,7 +146,6 @@
     }
   }
 
-  // ==================== CADASTRAR PROFESSOR ====================
   function configurarFormularioCadastro() {
     const form = document.querySelector("form");
     if (!form) return;
@@ -224,7 +218,6 @@
 
 
 
-  // ==================== SEÇÕES ====================
   const secoes = {
     dashboard: `
       <header class="topbar"><h2>📊Painel de Controle</h2></header>
@@ -382,7 +375,6 @@
     });
   }
 
-  // ==================== BACKUP E SEGURANÇA ====================
   function configurarBotoesBackup() {
     console.log("Configurando botões de backup...");
 
@@ -483,7 +475,7 @@
           if (resp.ok) {
             alert(dados.mensagem);
             localStorage.removeItem("token");
-            window.location.href = "index.html"; // força relogar como master
+            window.location.href = "index.html"; 
           } else {
             alert((dados.erro || "Erro ao resetar banco."));
           }
