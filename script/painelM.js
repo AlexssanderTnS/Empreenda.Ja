@@ -6,7 +6,7 @@
     return;
   }
 
-  console.log("✅ Painel Master inicializado");
+  console.log("Painel Master inicializado");
 
   // ==================== CONFIGURAÇÕES ====================
   const API_URL = "https://empreenda-ja.onrender.com";
@@ -66,7 +66,7 @@
             .join("");
 
       conteudo.innerHTML = `
-      <header class="topbar"><h2>📄 Relatórios de Envios</h2></header>
+      <header class="topbar"><h2>Relatórios de Envios</h2></header>
       <div class="fade">
         <table class="table table-striped table-bordered">
           <thead class="table-dark">
@@ -227,9 +227,9 @@
   // ==================== SEÇÕES ====================
   const secoes = {
     dashboard: `
-      <header class="topbar"><h2>📊 Painel de Controle</h2></header>
+      <header class="topbar"><h2>📊Painel de Controle</h2></header>
         <div class="fade">
-          <h4>📅 Ações Recentes</h4>
+          <h4>📅Ações Recentes</h4>
           <table class="table table-striped" id="tabelaLogs">
             <thead>
               <tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr>
@@ -240,11 +240,11 @@
 `,
 
     relatorios: `
-      <header class="topbar"><h2>📄 Relatórios</h2></header>
+      <header class="topbar"><h2>📄Relatórios</h2></header>
       <div class="fade"><p>Carregando relatórios...</p></div>
     `,
     professores: `
-      <header class="topbar"><h2>👨‍🏫 Professores Ativos</h2></header>
+      <header class="topbar"><h2>👨‍🏫Professores Ativos</h2></header>
       <div class="fade">
         <p>Lista de professores cadastrados no sistema.</p>
         <table class="table table-striped" id="tabelaProfessores">
@@ -262,7 +262,7 @@
       </div>
     `,
     cadastro: `
-      <header class="topbar"><h2>🧾 Cadastrar Novo Professor</h2></header>
+      <header class="topbar"><h2>🧾Cadastrar Novo Professor</h2></header>
       <div class="fade">
         <div class="card">
           <form>
@@ -276,7 +276,7 @@
     `,
 
     config: `
-  <header class="topbar"><h2>⚙️ Configurações do Sistema</h2></header>
+  <header class="topbar"><h2>⚙️Configurações do Sistema</h2></header>
   <div class="fade">
     <section class="card mb-3">
       <h4>Alterar Senha</h4>
@@ -305,7 +305,7 @@
 
   };
 
-  // ==================== TROCA DE ABAS ====================
+ 
   function ativarTrocaAbas() {
     navItems.forEach((item) => {
       item.addEventListener("click", async () => {
@@ -337,7 +337,7 @@
     });
   }
 
-  // ==================== ALTERAR SENHA ====================
+
   function configurarAlterarSenha() {
     const form = document.getElementById("formSenha");
     if (!form) return;
@@ -370,10 +370,10 @@
 
         const dados = await resp.json();
         if (resp.ok) {
-          alert("✅ Senha alterada com sucesso!");
+          alert("Senha alterada com sucesso!");
           form.reset();
         } else {
-          alert("⚠️ " + (dados.erro || "Erro ao alterar senha."));
+          alert((dados.erro || "Erro ao alterar senha."));
         }
       } catch (erro) {
         console.error("Erro ao alterar senha:", erro);
@@ -420,7 +420,7 @@
       });
     }
 
-    // --- BACKUP COMPLETO ---
+ 
     if (btnBackup) {
       btnBackup.addEventListener("click", async () => {
         console.log(" Baixando último backup completo...");
@@ -444,10 +444,10 @@
       });
     }
 
-    // --- BACKUP DIÁRIO ---
+  
     if (btnBackupHoje) {
       btnBackupHoje.addEventListener("click", async () => {
-        console.log("📅 Baixando backup diário...");
+        console.log("Baixando backup diário...");
         const resp = await fetch(`${API_URL}/api/backup/hoje`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -470,7 +470,7 @@
     const btnResetBanco = document.getElementById("btnResetBanco");
     if (btnResetBanco) {
       btnResetBanco.addEventListener("click", async () => {
-        const confirmar = confirm("⚠️ Isso vai APAGAR todos os dados e reiniciar o sistema. Deseja continuar?");
+        const confirmar = confirm("Isso vai APAGAR todos os dados e reiniciar o sistema. Deseja continuar?");
         if (!confirmar) return;
   
         try {
@@ -481,11 +481,11 @@
   
           const dados = await resp.json();
           if (resp.ok) {
-            alert("✅ " + dados.mensagem);
+            alert(dados.mensagem);
             localStorage.removeItem("token");
             window.location.href = "index.html"; // força relogar como master
           } else {
-            alert("⚠️ " + (dados.erro || "Erro ao resetar banco."));
+            alert((dados.erro || "Erro ao resetar banco."));
           }
         } catch (erro) {
           console.error("Erro ao resetar banco:", erro);
@@ -493,18 +493,16 @@
         }
       });
   }
-  // --- RESETAR BANCO DE DADOS ---
+
   }
 
 
 
 
-  // ==================== INICIALIZAÇÃO ====================
   ativarTrocaAbas();
   conteudo.innerHTML = secoes.dashboard;
   carregarLogs();
 
-  // ==================== BOTÃO DE SAIR ====================
   const btnLogout = document.getElementById("logout");
   if (btnLogout) {
     btnLogout.addEventListener("click", () => {
@@ -516,19 +514,16 @@
     });
   }
 
-  // ==================== BOTÕES DE BACKUP ====================
-  // Espera o DOM carregar completamente antes de buscar os botões
-  // ==================== BOTÕES DE BACKUP ====================
+  
   window.addEventListener("load", () => {
 
-    // Botão: Backup completo
     const btnBackup = document.getElementById("btnBackup");
     if (btnBackup) {
       btnBackup.addEventListener("click", async () => {
         const token = localStorage.getItem("token");
-        if (!token) return alert("⚠️ Token não encontrado. Faça login novamente.");
+        if (!token) return alert("Token não encontrado. Faça login novamente.");
 
-        console.log("🔹 Baixando backup completo com token:", token.slice(0, 15) + "...");
+        console.log("Baixando backup completo com token:", token.slice(0, 15) + "...");
 
         const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/download", {
           headers: { Authorization: `Bearer ${token}` }
@@ -550,14 +545,13 @@
       });
     }
 
-    // Botão: Backup diário
     const btnBackupHoje = document.getElementById("btnBackupHoje");
     if (btnBackupHoje) {
       btnBackupHoje.addEventListener("click", async () => {
         const token = localStorage.getItem("token");
-        if (!token) return alert("⚠️ Token não encontrado. Faça login novamente.");
+        if (!token) return alert("Token não encontrado. Faça login novamente.");
 
-        console.log("🔹 Baixando backup diário com token:", token.slice(0, 15) + "...");
+        console.log("Baixando backup diário com token:", token.slice(0, 15) + "...");
 
         const resp = await fetch("https://empreenda-ja.onrender.com/api/backup/hoje", {
           headers: { Authorization: `Bearer ${token}` }
