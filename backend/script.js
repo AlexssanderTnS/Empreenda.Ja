@@ -340,6 +340,7 @@ app.post("/api/frequencia/upload", autenticar, upload.single("arquivo"), async (
                 [req.user.id, "—", "—", dataHoje, nomeArquivo]
             );
 
+
         } catch (e) {
             console.error("[UPLOAD] Erro ao inserir na tabela frequencias:", e);
             return res.status(500).json({ erro: "Erro ao registrar frequência no banco." });

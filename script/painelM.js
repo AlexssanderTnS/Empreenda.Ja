@@ -112,7 +112,7 @@
               <td>${p.usuario}</td>
               <td>${p.tipo}</td>
               <td>
-                <button class="btn-excluir" data-id="${p.id}">🗑️ Excluir</button>
+                <button class="btn-excluir" data-id="${p.id}">Excluir</button>
               </td>
             </tr>`
         )
@@ -132,10 +132,10 @@
 
             const resultado = await resp.json();
             if (resp.ok) {
-              alert("✅ Professor excluído com sucesso!");
+              alert("Professor excluído com sucesso!");
               await carregarProfessores();
             } else {
-              alert("⚠️ " + (resultado.erro || "Erro ao excluir professor."));
+              alert((resultado.erro || "Erro ao excluir professor."));
             }
           } catch (erro) {
             alert("Erro de comunicação com o servidor.");
@@ -181,11 +181,11 @@
         const dados = await resp.json();
 
         if (resp.ok) {
-          alert("✅ Professor cadastrado com sucesso!");
+          alert("Professor cadastrado com sucesso!");
           form.reset();
           await carregarProfessores();
         } else {
-          alert("⚠️ " + (dados.erro || "Erro ao cadastrar."));
+          alert((dados.erro || "Erro ao cadastrar."));
         }
       } catch (erro) {
         alert("Erro de comunicação com o servidor.");
@@ -328,8 +328,8 @@
 
         } else if (secao === "config") {
           conteudo.innerHTML = secoes.config;
-          configurarAlterarSenha(); // 👈 ativa o formulário de troca de senha
-          configurarBotoesBackup(); // 👈 ativa os botões de backup (NOVO)
+          configurarAlterarSenha(); 
+          configurarBotoesBackup(); 
         }
         else {
           conteudo.innerHTML = secoes[secao] || "<p>Seção não encontrada.</p>";
