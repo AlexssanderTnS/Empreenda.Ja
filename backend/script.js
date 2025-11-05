@@ -50,7 +50,7 @@ async function dbQuery(sql, params = []) {
 
 async function seed() {
     const senhaMaster = bcrypt.hashSync("senhamaster123", 10);
-    const senhaProf = bcrypt.hashSync("senhaprof123", 10);
+
 
     await pool.query(`
     CREATE TABLE IF NOT EXISTS professores (
