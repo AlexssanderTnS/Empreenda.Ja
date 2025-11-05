@@ -59,7 +59,7 @@
               <tr>
                 <td>${l.professor_nome}</td>
                 <td>${l.data}</td>
-                <td>${l.alunos ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">📥 Baixar</a>` : "—"}</td>
+                <td>${l.alunos ? `<a href="${API_URL}/uploads/frequencias/${l.alunos}" target="_blank">Baixar</a>` : "—"}</td>
                 <td>${l.turma || "—"}</td>
               </tr>`
             )
@@ -293,7 +293,6 @@
 
     <section class="card">
       <h4>Backup e Segurança</h4>
-      <p>Último backup automático: <strong>21/10/2025 às 02:00</strong></p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
         <button id="btnBackupGeral" class="btn">Baixar backup geral (todos os relatórios)</button>
     <button id="btnResetBanco" class="btn btn-danger">Resetar banco de dados (limpar tudo)</button>
